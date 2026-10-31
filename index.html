@@ -28,16 +28,6 @@
      · .df-mood-card[data-mood] 选中态：JS 可任选其一
          class="is-active" / "is-selected" / "df-selected" / "selected"
          或设置 aria-pressed="true" / data-selected="true"（四种都已支持）
-     · #df-route-nodes 里 JS 生成的卡片推荐结构：
-         <button class="df-route-card" data-node="ID">
-           <div class="df-route-icon">⚔</div>
-           <div class="df-route-title">房间名</div>
-           <div class="df-route-desc">描述</div>
-           <div class="df-route-enemies">敌 ×3</div>
-         </button>
-       （同时兼容 h3 / p 之类的朴素标签写法）
-     · #df-route-info 内推荐：<div class="df-info-item"><span class="df-info-label">…</span>
-       <span class="df-info-value">…</span></div>
      · #df-result-body 内推荐：.df-stat-grid > .df-stat > .df-stat-label + .df-stat-value
      · #df-codex-body 内推荐：.df-codex-grid > .df-codex-item，空态用 .df-empty
      · #df-loading-bar 是**进度条填充条本身**：JS 直接
@@ -883,51 +873,16 @@ body{
 #df-settings .df-input{min-height:44px}
 
 /* =============================================================================
-   8 · 选路页 #df-route
+   8 · 面板页头（图鉴 / 工坊 / 成就 / 试炼页共用；原选路页残留的通用样式）
    ========================================================================== */
-#df-route{justify-content:flex-start;padding-top:22px}
-.df-route-inner{
-  display:flex;
-  flex-direction:column;
-  gap:18px;
-  width:min(920px,100%);
-  margin:auto 0;
-}
-#df-route-info{
-  display:flex;
-  flex-wrap:wrap;
-  align-items:center;
-  justify-content:space-between;
-  gap:10px 22px;
-  padding:12px 20px;
-  border-radius:999px;
-  font-size:.8125rem;
-}
-#df-route-info .df-info-item{
-  display:inline-flex;
-  align-items:baseline;
-  gap:.5em;
-  white-space:nowrap;
-}
-#df-route-info .df-info-label{
-  font-size:.6875rem;
-  letter-spacing:.22em;
-  color:var(--df-ink-faint);
-}
-#df-route-info .df-info-value{
-  font-family:var(--df-mono);
-  font-size:.9375rem;
-  font-weight:700;
-  color:var(--df-frost);
-}
-.df-route-head{
+.df-page-head{
   display:flex;
   flex-direction:column;
   align-items:center;
   gap:4px;
   text-align:center;
 }
-.df-route-title-main{
+.df-page-head-title{
   margin:0;
   font-size:1.5rem;
   font-weight:700;
@@ -935,119 +890,11 @@ body{
   text-indent:.16em;
   color:var(--df-frost);
 }
-.df-route-sub{
+.df-page-head-sub{
   margin:0;
   font-size:.8125rem;
   color:var(--df-ink-faint);
   letter-spacing:.06em;
-}
-#df-route-nodes{
-  display:grid;
-  grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
-  gap:16px;
-  width:100%;
-}
-
-/* 选路卡片：玻璃 + hover 提亮上浮 */
-.df-route-card{
-  position:relative;
-  display:flex;
-  flex-direction:column;
-  align-items:flex-start;
-  gap:10px;
-  width:100%;
-  min-height:176px;
-  padding:18px 18px 16px;
-  text-align:left;
-  font-family:inherit;
-  color:var(--df-ink);
-  text-shadow:var(--df-text-shadow);
-  background:var(--df-glass-fill);
-  border:1px solid var(--df-glass-line);
-  border-radius:var(--df-radius);
-  box-shadow:var(--df-shadow);
-  -webkit-backdrop-filter:blur(12px);
-  backdrop-filter:blur(12px);
-  cursor:pointer;
-  -webkit-appearance:none;
-  appearance:none;
-  outline:none;
-  overflow:hidden;
-  transition:transform .22s ease,border-color .22s ease,background .22s ease,box-shadow .22s ease;
-}
-.df-route-card::before{
-  content:"";
-  position:absolute;
-  left:0;right:0;top:0;
-  height:52%;
-  pointer-events:none;
-  border-radius:var(--df-radius) var(--df-radius) 0 0;
-  background:linear-gradient(rgba(255,255,255,.10),rgba(255,255,255,0));
-}
-.df-route-card:hover,
-.df-route-card:focus-visible{
-  transform:translateY(-4px);
-  border-color:rgba(84,230,255,.85);
-  background:rgba(26,24,54,.62);
-  box-shadow:0 16px 40px rgba(0,0,0,.5),0 0 26px rgba(84,230,255,.32);
-}
-.df-route-card:active{transform:translateY(-1px) scale(.994)}
-.df-route-card[disabled]{opacity:.4;cursor:not-allowed;transform:none}
-
-.df-route-icon{
-  display:grid;
-  place-items:center;
-  width:46px;height:46px;
-  border-radius:12px;
-  font-size:1.375rem;
-  line-height:1;
-  color:var(--df-frost);
-  background:radial-gradient(circle at 32% 24%,rgba(84,230,255,.34),rgba(176,107,255,.18) 70%);
-  border:1px solid rgba(84,230,255,.42);
-  box-shadow:inset 0 0 16px rgba(84,230,255,.16);
-}
-.df-route-card .df-route-title,
-.df-route-card h3{
-  margin:0;
-  font-size:1.0625rem;
-  font-weight:700;
-  letter-spacing:.08em;
-}
-.df-route-card .df-route-desc,
-.df-route-card p{
-  margin:0;
-  font-size:.8125rem;
-  line-height:1.6;
-  color:var(--df-ink-dim);
-}
-.df-route-card .df-route-enemies{
-  display:inline-flex;
-  align-items:center;
-  gap:.4em;
-  margin-top:auto;
-  padding-top:6px;
-  font-family:var(--df-mono);
-  font-size:.8125rem;
-  font-weight:700;
-  color:var(--df-gold);
-}
-/* 敌人数量用"形状 + 数值"双编码，不单靠颜色（art §7） */
-.df-route-card .df-enemy-pip{
-  width:7px;height:7px;
-  border-radius:1px;
-  background:var(--df-red);
-  transform:rotate(45deg);
-  box-shadow:0 0 8px rgba(255,84,112,.8);
-}
-/* 按节点类型着色 */
-.df-route-card[data-type="combat"]  .df-route-icon{color:var(--df-cyan);border-color:rgba(84,230,255,.42)}
-.df-route-card[data-type="elite"]   .df-route-icon{color:var(--df-gold);border-color:rgba(255,200,87,.48);background:radial-gradient(circle at 32% 24%,rgba(255,200,87,.30),rgba(255,84,112,.16) 70%)}
-.df-route-card[data-type="treasure"] .df-route-icon{color:var(--df-gold);border-color:rgba(255,200,87,.48)}
-.df-route-card[data-type="rest"]    .df-route-icon{color:var(--df-mint);border-color:rgba(95,251,193,.45)}
-.df-route-card[data-type="boss"]    .df-route-icon{color:var(--df-red);border-color:rgba(255,84,112,.55);background:radial-gradient(circle at 32% 24%,rgba(255,84,112,.32),rgba(176,107,255,.18) 70%)}
-.df-route-card[data-type="boss"]{
-  border-color:rgba(255,84,112,.42);
-  box-shadow:var(--df-shadow),0 0 22px rgba(255,84,112,.20);
 }
 
 /* =============================================================================
@@ -1385,11 +1232,6 @@ body{
   .df-panel{padding:20px 16px}
   .df-panel-title{font-size:1.25rem}
   .df-row{padding:.55em .7em}
-  #df-route-info{border-radius:var(--df-radius);justify-content:flex-start;gap:8px 16px}
-  #df-route-nodes{grid-template-columns:1fr;gap:12px}
-  .df-route-card{min-height:0;padding:14px 14px 12px;flex-direction:row;flex-wrap:wrap;align-items:center}
-  .df-route-card .df-route-icon{width:38px;height:38px;font-size:1.125rem}
-  .df-route-card .df-route-desc{flex:1 1 100%}
   #df-result-title{font-size:1.625rem}
   .df-stat-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
   #df-toast{top:12px;right:12px}
@@ -1486,10 +1328,10 @@ body{
   .df-loading-orb,
   #df-loading-text,
   .df-toast-item{animation:none !important}
-  .df-btn,.df-card,.df-route-card,.df-toggle,.df-toggle::after,.df-input,.df-range::-webkit-slider-thumb{
+  .df-btn,.df-card,.df-toggle,.df-toggle::after,.df-input,.df-range::-webkit-slider-thumb{
     transition:none !important;
   }
-  .df-btn:hover,.df-route-card:hover,.df-mood-card:hover{transform:none}
+  .df-btn:hover,.df-mood-card:hover{transform:none}
 }
 /* JS 通过设置页"减少动态效果"给 #df-root 加这个 class */
 .df-reduce-motion .df-screen,
@@ -1500,11 +1342,9 @@ body{
 .df-reduce-motion .df-toast-item{animation:none !important}
 .df-reduce-motion .df-blob{opacity:.30}
 .df-reduce-motion .df-btn:hover,
-.df-reduce-motion .df-route-card:hover,
 .df-reduce-motion .df-mood-card:hover{transform:none}
 /* JS 通过设置页"色盲友好"给 #df-root 加这个 class：
    所有状态改用"加粗描边 + 形状"提示，不单靠色相（art §7） */
-.df-colorblind .df-route-card[data-type="boss"]{border-width:2px;border-style:dashed}
 .df-colorblind .df-mood-card:is(.is-active,.is-selected,.df-selected,.selected),
 .df-colorblind .df-mood-card[aria-pressed="true"],
 .df-colorblind .df-mood-card[data-selected="true"]{border-width:2px}
@@ -1611,32 +1451,9 @@ body{
     <div id="df-settings" class="df-screen df-hidden">
       <div class="df-panel df-glass">
         <h2 class="df-panel-title">设置</h2>
-        <p class="df-panel-sub">秘境推演服务与可访问性选项</p>
+        <p class="df-panel-sub">音画与可访问性选项</p>
 
         <div class="df-form">
-          <!-- AI 密钥 -->
-          <label class="df-field" for="df-set-key">
-            <span class="df-field-label">AI 密钥 <em class="df-field-tag">可选</em></span>
-            <input class="df-input" id="df-set-key" type="password" autocomplete="off"
-                   spellcheck="false" placeholder="留空则使用本地种子生成">
-            <span class="df-field-hint">仅保存在本机，不会随分享外传；留空时用种子生成器，体验完整可玩。</span>
-          </label>
-
-          <!-- 接口地址 -->
-          <label class="df-field" for="df-set-baseurl">
-            <span class="df-field-label">接口地址</span>
-            <input class="df-input" id="df-set-baseurl" type="text" autocomplete="off"
-                   spellcheck="false" placeholder="https://api.openai.com/v1/chat/completions">
-            <span class="df-field-hint">任何兼容 /chat/completions 的服务均可。</span>
-          </label>
-
-          <!-- 模型 -->
-          <label class="df-field" for="df-set-model">
-            <span class="df-field-label">模型</span>
-            <input class="df-input" id="df-set-model" type="text" autocomplete="off"
-                   spellcheck="false" placeholder="gpt-4o-mini">
-          </label>
-
         <!-- 开关组（v2：全部收进 .df-form，使矮屏下整块内部滚动、标题与返回键常驻） -->
         <div class="df-row">
           <label class="df-row-main" for="df-set-colors">
@@ -1705,42 +1522,6 @@ body{
     </div>
 
     <!-- =====================================================================
-         择路页（纯肉鸽后已不进入：保留 DOM 是为了 CONTRACT §5 的 id 契约与
-         旧蓝图/测试脚手架的兜底路径；玩家在正常游玩中看不到这一屏）
-         ================================================================== -->
-    <div id="df-route" class="df-screen df-hidden">
-      <div class="df-route-inner">
-        <!-- 顶部信息条（JS 填充：波次 / 道韵 / 灵气 / 法器） -->
-        <div id="df-route-info" class="df-glass">
-          <div class="df-info-item">
-            <span class="df-info-label">波次</span>
-            <span class="df-info-value">第 1 波</span>
-          </div>
-          <div class="df-info-item">
-            <span class="df-info-label">道韵</span>
-            <span class="df-info-value df-accent-violet">—</span>
-          </div>
-          <div class="df-info-item">
-            <span class="df-info-label">灵气</span>
-            <span class="df-info-value df-accent-gold">0</span>
-          </div>
-          <div class="df-info-item">
-            <span class="df-info-label">武器</span>
-            <span class="df-info-value">御剑诀</span>
-          </div>
-        </div>
-
-        <div class="df-route-head">
-          <h2 class="df-route-title-main">择路</h2>
-          <p class="df-route-sub">道场外围的岔路 —— 选定即入</p>
-        </div>
-
-        <!-- 候选节点（JS 动态填入 .df-route-card） -->
-        <div id="df-route-nodes"></div>
-      </div>
-    </div>
-
-    <!-- =====================================================================
          结算页
          ================================================================== -->
     <div id="df-result" class="df-screen df-hidden">
@@ -1796,9 +1577,9 @@ body{
          ================================================================== -->
     <div id="df-codex" class="df-screen df-hidden">
       <div class="df-codex-inner">
-        <div class="df-route-head">
-          <h2 class="df-route-title-main">仙途图鉴</h2>
-          <p class="df-route-sub">已遇见的法器、奇物与道韵</p>
+        <div class="df-page-head">
+          <h2 class="df-page-head-title">仙途图鉴</h2>
+          <p class="df-page-head-sub">已遇见的法器、奇物与道韵</p>
         </div>
 
         <!-- 图鉴内容（JS 填充 .df-codex-grid > .df-codex-item） -->
@@ -1817,9 +1598,9 @@ body{
          ================================================================== -->
     <div id="df-forge" class="df-screen df-hidden">
       <div class="df-codex-inner">
-        <div class="df-route-head">
-          <h2 class="df-route-title-main">仙途工坊</h2>
-          <p class="df-route-sub">用灵气换取永久起手优势 —— 只影响开局，不影响局内成长</p>
+        <div class="df-page-head">
+          <h2 class="df-page-head-title">仙途工坊</h2>
+          <p class="df-page-head-sub">用灵气换取永久起手优势 —— 只影响开局，不影响局内成长</p>
         </div>
         <div class="df-forge-wallet">
           <span class="df-forge-wallet-label">可用灵气</span>
@@ -1839,9 +1620,9 @@ body{
          ================================================================== -->
     <div id="df-achv" class="df-screen df-hidden">
       <div class="df-codex-inner">
-        <div class="df-route-head">
-          <h2 class="df-route-title-main">成就与彩蛋</h2>
-          <p class="df-route-sub" id="df-achv-sub">达成条件可解锁程序员节彩蛋武器</p>
+        <div class="df-page-head">
+          <h2 class="df-page-head-title">成就与彩蛋</h2>
+          <p class="df-page-head-sub" id="df-achv-sub">达成条件可解锁程序员节彩蛋武器</p>
         </div>
         <div id="df-achv-body" class="df-glass">
           <p class="df-empty">正在读取成就…</p>
@@ -2028,7 +1809,7 @@ body{
     PARTICLE_CAP: 60,            // 桌面粒子上限
     PARTICLE_CAP_MOBILE: 30,     // 移动端粒子上限
     // AI / 生成（架构 §6）
-    AI_TIMEOUT: 8000,            // ms；超时即降级到种子生成器
+    AI_TIMEOUT: 8000,            // ms；历史字段（旧存档/外部脚本读），零联网后已无超时逻辑
     // 玩家基准（01 §4）
     PLAYER: {
       hp: 100,                   // maxHp
@@ -2526,8 +2307,6 @@ body{
     MENU_START: '开始修行',
     MENU_BEST_NONE: '尚未入道',
     GEN_SERVICE: '天道推演服务',
-    ROUTE_TITLE: '选择下一处秘境',
-    ROUTE_SUB: '天道会改写道韵——先明心，再破境',
     RESULT_WIN: '飞升',
     RESULT_LOSE: '兵解',
     RESULT_DIARY_LOADING: '道心录正在成形……',
@@ -2588,10 +2367,56 @@ body{
   DF.TALENT_CHOICES = 3;
 
   /* ==========================================================================
+   * 9e · DF.XP —— 修为（掉落经验球 → 升级 → 择道心）
+   *
+   * 为什么改：原来每清一波自动弹三选一，节奏是「清场 → 弹卡」的固定间隔，
+   * 玩家没有"我在变强"的实感，也没有"该不该冒险去捡"的取舍。
+   * 现在改成标准肉鸽的修为条：击杀掉「修为珠」在地上，
+   * 等级是经验球的累计量，攒满才弹一次择道心 —— 于是：
+   *   · 捡经验变成一个主动行为（要往敌人群里冲一点）
+   *   · 升级节奏由玩家自己决定，而不是波次决定
+   *   · HUD 上多一条条，成长可见
+   *
+   * 数值：Lv.N → Lv.N+1 需要 need(N) 点修为。
+   *   need(1)=8，之后每级 ×1.35（8/11/15/20/27/36/49/66…）。
+   *   一局正常能升 8~12 级，与 TALENT_MAX_PICKS 对齐。
+   * 掉落：普通敌 1 珠 / 精英与镜魔 3 珠 / Boss 12 珠；
+   *   每珠 1 点，另有小概率精英掉「大珠」= 3 点（视觉上更大更亮）。
+   * ======================================================================== */
+  DF.XP = {
+    base: 8,            // Lv.1 → Lv.2 需要的修为
+    growth: 1.35,       // 每级需求倍率
+    maxLevel: 30,       // 硬上限（正常一局到不了）
+    perKill: 1,         // 普通敌掉落珠数
+    perElite: 3,        // 精英掉落珠数
+    perBoss: 12,        // Boss 掉落珠数
+    bigChance: 0.12,    // 大珠（3 点）概率，只对精英生效
+    magnetR: 150,       // 磁吸半径（比灵气 130 更远，捡经验要爽快）
+    magnetSpeed: 260,   // 磁吸初速
+    orbR: 5,            // 珠半径
+    orbRBig: 8
+  };
+
+  /** 从 Lv 升到 Lv+1 需要的修为（纯函数） */
+  DF.xpNeed = function (level) {
+    var c = DF.XP;
+    var lv = Math.max(1, Math.floor(level || 1));
+    return Math.round(c.base * Math.pow(c.growth, lv - 1));
+  };
+
+  /** 当前等级与修为进度（纯函数，供 HUD / 测试读） */
+  DF.xpState = function (p) {
+    var lv = Math.max(1, (p && p.level) || 1);
+    var need = DF.xpNeed(lv);
+    var xp = Math.max(0, (p && p.xp) || 0);
+    return { level: lv, xp: xp, need: need, pct: Math.min(1, xp / Math.max(1, need)) };
+  };
+
+  /* ==========================================================================
    * 10 · DF.STARDUST —— 灵气结算系数（纯计分，无永久数值强化；D4 显示名「星尘→灵气」）
    * 来源：design/gdd/06-meta-end.md §3.1 / §4
    * runStardust = base + floorsCleared×perFloor + bossKill + relicCount×perRelic
-   *               + themeBonus，再乘 degradedMult（无 Key 降级局）。
+   *               + themeBonus（零联网后不再乘 degradedMult，见 70-fsm 结算注释）。
    * ======================================================================== */
   DF.STARDUST = {
     base: 50,          // 基础分
@@ -2599,7 +2424,7 @@ body{
     bossKill: 200,     // 击杀 Boss
     perRelic: 15,      // 每件奇物
     themeBonus: 50,    // 主题加成（有主题即给）
-    degradedMult: 0.85 // 无 Key 降级局系数（R1 反向激励）
+    degradedMult: 0.85 // 历史系数（零联网后不再应用；键保留以免存档/外部脚本读空）
   };
 
   /* ==========================================================================
@@ -2822,9 +2647,6 @@ body{
   // ---------- 默认设置（对应 localStorage df.settings） ----------
   function defaultSettings() {
     return {
-      aiKey: '',
-      baseURL: '',
-      model: 'gpt-4o-mini',
       colorBlind: false,
       reduceMotion: false,
       shake: true,
@@ -4154,6 +3976,9 @@ body{
       weaponId: 'pulse',
       weaponLevel: 1,          // v3 武器等级（1–3）
       dust: 0,                 // v3 梦尘（升级货币，局内）
+      /* 9e 修为：捡地上的「修为珠」累加，攒满即升级并弹一次择道心。
+         level 从 1 起步（与 weaponLevel 同口径），xp 是当前等级内的进度。 */
+      level: 1, xp: 0, xpTotal: 0,
       relics: [],
 
       moveX: 0, moveY: 0, aimX: 1, aimY: 0, firing: false, tapLocked: false,
@@ -4805,6 +4630,29 @@ body{
         pk.kind = 'stardust';
         pk.color = '#FFC857';
         pk.r = 7;
+      }
+      /* 9e 修为珠：与灵气分开掉。灵气只进分数，修为只推等级，
+         两种球视觉上要能一眼分（修为是薄荷绿小珠，灵气是金色四角星）。 */
+      var X = DF.XP || {};
+      var isEliteKill = (e.type === 'mirror' || e.type === 'twinshard');
+      var orbN = isEliteKill ? (X.perElite || 3) : (X.perKill || 1);
+      for (var xj = 0; xj < orbN; xj++) {
+        var pkx = DF.POOL.P.pickups.spawn();
+        if (!pkx) break;
+        var ax = U.rnd().next() * Math.PI * 2;
+        var rr0 = 8 + U.rnd().next() * 22;
+        pkx.x = e.x + Math.cos(ax) * rr0;
+        pkx.y = e.y + Math.sin(ax) * rr0;
+        pkx.kind = 'xp';
+        pkx.color = '#5FFBC1';
+        pkx.r = X.orbR || 5;
+        pkx.value = 1;
+        /* 精英有概率掉大珠（3 点）：掉率与"值多少"都由数据表决定，渲染只读 value */
+        if (isEliteKill && U.rnd().chance(X.bigChance || 0.12)) {
+          pkx.value = 3;
+          pkx.r = X.orbRBig || 8;
+          pkx.big = true;
+        }
       }
     }
   }
@@ -5902,6 +5750,12 @@ body{
         if (d < p.radius + pk.r + 6) pk.magnet = true;   // 只贴到脚边就够
       } else if (pk.kind === 'hp' || pk.kind === 'shield') pk.magnet = true;
       else if (pk.kind === 'dust') { if (d < 170) pk.magnet = true; }
+      else if (pk.kind === 'xp') {
+        /* 修为珠的吸附半径比灵气更远：经验是要主动去收的核心资源，
+           够不到的球会让人反复绕场，手感很糟。 */
+        var xr = (DF.XP || {}).magnetR || 150;
+        if (d < xr) pk.magnet = true;
+      }
       else if (d < 130) pk.magnet = true;
       if (pk.magnet && p) {
         var n = U.norm(p.x - pk.x, p.y - pk.y);
@@ -5909,7 +5763,9 @@ body{
           ? 240 + (130 - Math.min(d, 130)) * 6
           : (pk.kind === 'dust'
             ? 210 + (170 - Math.min(d, 170)) * 5
-            : 120 + (130 - Math.min(d, 130)) * 4);
+            : (pk.kind === 'xp'
+              ? ((DF.XP || {}).magnetSpeed || 260)
+              : 120 + (130 - Math.min(d, 130)) * 4));
         pk.x += n.x * sp * dt;
         pk.y += n.y * sp * dt;
       } else {
@@ -5939,6 +5795,14 @@ body{
       case 'dust':
         // v3：梦尘（武器升级货币），不进 localStorage
         p.dust = (p.dust || 0) + 1;
+        if (DF.AUDIO) DF.AUDIO.pickup();
+        break;
+      case 'xp':
+        /* 9e：修为。这里只累加，不在这里升级 ——
+           升级要弹三选一卡（DOM 操作 + 切场景），必须由 FSM 在安全时机做。
+           所以经验加满后置 pending 标记，FSM 每帧检查后触发。 */
+        p.xp = (p.xp || 0) + (pk.value || 1);
+        p.xpTotal = (p.xpTotal || 0) + (pk.value || 1);
         if (DF.AUDIO) DF.AUDIO.pickup();
         break;
       case 'relic':
@@ -7024,310 +6888,48 @@ body{
 /* ==================== 60-ai.js ==================== */
 
 /* ============================================================
- * §6 AI MODULE — 秘境蓝图推演 / 超时 / Schema / 降级（增强非必需）
+ * §6 秘境蓝图与道心录 —— 本地生成（零联网）
  * 依赖：00-config、10-util、50-world
- * 来源：docs/architecture/01-architecture.md §6；02-adr.md ADR-2；概念 R1/R5
+ *
+ * 历史：本模块早期提供「填 API Key → 联网推演蓝图」的可选增强。
+ * 上线后判定这个口子弊大于利：作品对外承诺是「单文件 · 零依赖 · 零联网」，
+ * 一个要玩家自带密钥、还要填接口地址和模型名的表单，既破坏这个承诺，
+ * 又让第一次打开设置页的人以为缺了什么东西才能玩（实际不填才是完整玩法）。
+ * 现在整条网络链路已删除：本文件只保留「种子生成蓝图」与「模板道心录」，
+ * 不再有任何 fetch / 任何密钥字段。
+ *
+ * 对外接口保持原形（DF.AI.generateDream / seedFallback / generateDiary /
+ * buildTemplateDiary），调用方 70-fsm 与 99-main 无需改动；
+ * 内部 token 名一律不动（纪律 R1）。
  * ============================================================ */
 (function () {
   'use strict';
   var DF = (typeof window !== 'undefined' && window.DF) || {};
   var U = DF.U;
 
-  var SYSTEM_PROMPT = [
-    '你是一座虚构修仙秘境的推演器（造化玉碟），为一款名为《仙途·飞升录》的双摇杆射击游戏推演参数化秘境蓝图。',
-    '',
-    '【输出要求】',
-    '只输出一个 JSON 对象，不要输出任何解释、markdown 代码块标记或注释。',
-    'JSON 结构必须严格如下（字段名一字不差）：',
-    '{',
-    '  "schemaVersion": 1,',
-    '  "seed": <number>,',
-    '  "dream": {',
-    '    "theme": "invert" | "whisper" | "tranquil" | "absurd",',
-    '    "name": "<4-8字的虚构秘境名，中文>",',
-    '    "mood": "anxious" | "calm" | "frenzy" | "sleepy" | null,',
-    '    "variantRules": { "gravityDir": -1|1, "tapInterval": 0.10-0.40, "offsetMax": 0-12 }',
-    '  },',
-    '  "floors": [ { "floor": 1, "nodes": [ { "id": "f1n0", "type": "start|combat|elite|relic|rest|boss", "col": <int>, "row": <int>, "edges": ["<id>"], "enemyMix": {"spike":2} } ], "bossNodeId": "f1n3" } ],',
-    '  "enemyTable": { "combat": ["spike","whisper","shard","tangle"], "elite": ["mirror"], "boss": "nebula_eye" | "weaver" },',
-    '  "weaponPool": ["pulse","scatter","orbital","laser","homing","burst","chain","spray","frost","summon"],',
-    '  "relicPool": ["prism","starcore","echo","slow","twin","devour","gravity","pierce","ember","silence","perpetual","rift","aegis","meteor","phantom"],',
-    '  "difficulty": <0.6-1.8>',
-    '}',
-    '',
-    '【图结构硬约束】',
-    '1. 每层 nodes 必须构成分层 DAG：col 从 0 递增，edges 只连向 col 更大的节点。',
-    '2. 必须有且仅有一个 type="start" 节点（col=0），必须有且仅有一个 type="boss" 节点（col 最大且 edges 为空数组）。',
-    '3. bossNodeId 必须等于那个 boss 节点的 id。',
-    '4. 所有节点必须从 start 沿 edges 可达，不允许孤岛。',
-    '5. 每层 col 数 3-5，每列节点 1-3 个。',
-    '6. 只有 combat / elite 节点携带 enemyMix，值为 {"敌人id": 正整数}。',
-    '',
-    '【内容约束】',
-    '7. enemyMix 的键只能是 spike / whisper / shard / tangle / mirror / diverger / bomber / twinshard 之一。',
-    '7b. enemyTable.boss 只能是 nebula_eye 或 weaver 之一（两个虚构 Boss，任选）。',
-    '8. 不要输出任何数值平衡参数（血量、伤害、速度），这些由游戏静态表决定，你只决定"出现哪些类型"。',
-    '9. 不要输出任何代码、脚本或可执行内容。',
-    '',
-    '【合规红线 · 必须遵守】',
-    '10. 全部文本必须是虚构修仙叙事。',
-    '11. 严禁出现任何算命、占卜、运势、命理、风水、星座、塔罗、卜卦、预测吉凶、八字、转世等暗示或词汇。',
-    '12. 严禁出现任何真实人名、品牌名、政治宗教内容。'
-  ].join('\n');
-
-  // 完整合法的一层蓝图示例（few-shot）。实测：无示例时 mimo-v2.6 系列会在长 JSON 中途
-  // 退化成重复 token，导致 schema/解析降级；给出结构完整的短示例后成功率从 ~40% 提到 100%。
-  var FEWSHOT_EXAMPLE = [
-    '',
-    '',
-    '【完整示例 · 严格照此秘境结构，只改数值与名字】',
-    '{"schemaVersion":1,"seed":123456,"dream":{"theme":"whisper","name":"回音洞天","mood":null,',
-    '"variantRules":{"gravityDir":1,"tapInterval":0.18,"offsetMax":12}},',
-    '"floors":[{"floor":1,"nodes":[',
-    '{"id":"f1n0","type":"start","col":0,"row":1,"edges":["f1n1","f1n2"]},',
-    '{"id":"f1n1","type":"combat","col":1,"row":0,"edges":["f1n3"],"enemyMix":{"spike":2,"whisper":1}},',
-    '{"id":"f1n2","type":"relic","col":1,"row":2,"edges":["f1n3"]},',
-    '{"id":"f1n3","type":"rest","col":2,"row":1,"edges":["f1n4"]},',
-    '{"id":"f1n4","type":"boss","col":3,"row":1,"edges":[]}',
-    '],"bossNodeId":"f1n4"}],',
-    '"enemyTable":{"combat":["spike","whisper","shard","tangle"],"elite":["mirror"],"boss":"nebula_eye"},',
-    '（boss 也可以写 "weaver"，两者都合法）',
-    '"weaponPool":["pulse","scatter","orbital","laser","homing","burst","chain","spray","frost","summon"],',
-    '"relicPool":["prism","starcore","echo","slow","twin","devour","gravity","pierce","ember","silence","perpetual","rift","aegis","meteor","phantom"],',
-    '"difficulty":1.05}',
-    '【示例结束】上面就是一份完整合法的秘境蓝图。请照此结构生成本局的秘境蓝图，不要输出示例本身以外的任何文字。'
-  ].join('\n');
-
-  var FULL_SYSTEM_PROMPT = SYSTEM_PROMPT + FEWSHOT_EXAMPLE;
-
-  function userPrompt(seed, ctx) {
-    var lines = [
-      '请为下面这一局推演秘境蓝图：',
-      '- seed: ' + seed,
-      '- 主题（theme）请从 invert / whisper / tranquil / absurd 中选一个，并让 dream.name 与之呼应',
-      '- 层数：1 层（试炼之始），层内 col 数 4',
-      '- difficulty 建议 0.9 ~ 1.2'
-    ];
-    if (ctx && ctx.mood) lines.push('- 玩家起始心境: ' + ctx.mood);
-    return lines.join('\n');
-  }
-
-  // 只有明确已知支持 thinking 开关的模型才发该字段（避免其它 OpenAI 兼容端点 400）
-  var THINKING_OFF_MODELS = ['mimo-v2.6-flash', 'mimo-v2.6-pro', 'mimo-v2.6-pro-ultraspeed'];
-  function providerSupportsThinkingOff(model) {
-    if (!model) return false;
-    var m = String(model).trim().toLowerCase();
-    for (var i = 0; i < THINKING_OFF_MODELS.length; i++) if (m === THINKING_OFF_MODELS[i]) return true;
-    return false;
-  }
-
-  // ---------- 从模型返回文本里抽取 JSON ----------
-  function extractJSON(text) {
-    if (!text) return null;
-    var s = String(text).trim();
-    // 去掉代码围栏
-    s = s.replace(/^\s*```(?:json)?\s*/i, '').replace(/\s*```\s*$/, '');
-    try { return JSON.parse(s); } catch (e) { /* 继续 */ }
-    // 花括号配对抽取
-    var start = s.indexOf('{');
-    if (start < 0) return null;
-    var depth = 0, inStr = false, esc = false;
-    for (var i = start; i < s.length; i++) {
-      var c = s.charAt(i);
-      if (esc) { esc = false; continue; }
-      if (c === '\\') { esc = true; continue; }
-      if (c === '"') { inStr = !inStr; continue; }
-      if (inStr) continue;
-      if (c === '{') depth++;
-      else if (c === '}') {
-        depth--;
-        if (depth === 0) {
-          try { return JSON.parse(s.slice(start, i + 1)); } catch (e2) { return null; }
-        }
-      }
-    }
-    return null;
-  }
-
-  // ---------- 降级：种子生成器 ----------
+  // ---------- 种子生成器：蓝图唯一来源 ----------
   function seedFallback(seed) {
     var bp = DF.WORLD.gen(seed);
     bp.__source = 'fallback';
     return bp;
   }
 
-  // ---------- AI 请求（带超时 + 严格降级链路，永不 reject）----------
+  /**
+   * 生成一局的蓝图。
+   * 返回 Promise 是为了保持与旧调用方的形状一致（70-fsm 里 await 它、
+   * 并读 res.bp / res.source）；现在它是同步生成的，Promise 立刻 resolved。
+   * 保留 source='fallback'：存档 / 日记 / 成就都在读这个字段。
+   */
   function generateDream(seed, ctx) {
-    var G = DF.G;
-    var st = G.settings || {};
-    var key = (st.aiKey || '').trim();
-    var endpoint = (st.baseURL || '').trim();
-    var model = (st.model || 'gpt-4o-mini').trim();
-
-    // 1) 无 Key 或 无 endpoint → 直接种子
-    if (!key || !endpoint) {
-      return Promise.resolve({ bp: seedFallback(seed), source: 'fallback', reason: 'no-key' });
-    }
-    var fetchFn = (typeof fetch === 'function') ? fetch : null;
-    if (!fetchFn) {
-      return Promise.resolve({ bp: seedFallback(seed), source: 'fallback', reason: 'no-fetch' });
-    }
-
-    var timeout = (DF.CST && DF.CST.AI_TIMEOUT) || 8000;
-    var ac = null;
-    try { ac = (typeof AbortController !== 'undefined') ? new AbortController() : null; } catch (e) { ac = null; }
-
-    var body = {
-      model: model,
-      temperature: 0.9,
-      max_tokens: 4000,
-      response_format: { type: 'json_object' },
-      messages: [
-        { role: 'system', content: FULL_SYSTEM_PROMPT },
-        { role: 'user', content: userPrompt(seed, ctx) }
-      ]
-    };
-    // 关闭思维链：实测可把首字延迟从 ~10s 降到 ~1.5s（MiMo v2.6 支持）
-    if (providerSupportsThinkingOff(model)) body.thinking = { type: 'disabled' };
-
-    return new Promise(function (resolve) {
-      var done = false;
-      var timer = setTimeout(function () {
-        if (ac && ac.abort) { try { ac.abort(); } catch (e) { } }
-        finish({ bp: seedFallback(seed), source: 'fallback', reason: 'timeout' });
-      }, timeout);
-      function finish(res) {
-        if (done) return;
-        done = true;
-        clearTimeout(timer);
-        resolve(res);
-      }
-
-      var opts = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify(body)
-      };
-      if (ac) opts.signal = ac.signal;
-
-      var req;
-      try { req = fetchFn(endpoint, opts); }
-      catch (e) { finish({ bp: seedFallback(seed), source: 'fallback', reason: 'fetch-throw' }); return; }
-
-      Promise.resolve(req).then(function (res) {
-        if (!res || !res.ok) {
-          finish({ bp: seedFallback(seed), source: 'fallback', reason: 'http-' + (res && res.status) });
-          return null;
-        }
-        return res.text();
-      }).then(function (text) {
-        if (done) return;
-        if (text === null || text === undefined) return;
-        var obj = extractJSON(text);
-        if (!obj) { finish({ bp: seedFallback(seed), source: 'fallback', reason: 'parse' }); return; }
-        // 兼容 OpenAI 包裹格式
-        if (obj.choices && obj.choices[0] && obj.choices[0].message) {
-          var inner = extractJSON(obj.choices[0].message.content);
-          if (inner) obj = inner;
-        }
-        var v = U.validateBlueprint(obj);
-        if (!v.ok || !v.bp) {
-          finish({ bp: seedFallback(seed), source: 'fallback', reason: 'schema:' + ((v.errors && v.errors[0]) || '') });
-          return;
-        }
-        var bad = false;
-        for (var i = 0; i < v.bp.floors.length; i++) {
-          if (!U.validateFloorGraph(v.bp.floors[i]).ok) { bad = true; break; }
-        }
-        if (bad) { finish({ bp: seedFallback(seed), source: 'fallback', reason: 'graph' }); return; }
-        // 主题未识别 → 由种子决定（02 §6.3）
-        if (v.bp.__themeUnknown) {
-          var s = seedFallback(seed);
-          v.bp.dream.theme = s.dream.theme;
-          v.bp.dream.variantRules = s.dream.variantRules;
-        }
-        // 合规二次过滤（R5 双保险）
-        if (U.hasForbidden(v.bp.dream.name)) {
-          var s2 = seedFallback(seed);
-          v.bp.dream.name = s2.dream.name;
-        }
-        v.bp.__source = 'ai';
-        finish({ bp: v.bp, source: 'ai' });
-      }).catch(function (err) {
-        var reason = 'error';
-        if (err && err.name === 'AbortError') reason = 'timeout';
-        finish({ bp: seedFallback(seed), source: 'fallback', reason: reason });
-      });
-    });
+    return Promise.resolve({ bp: seedFallback(seed), source: 'fallback' });
   }
 
-  // ---------- 局末 AI 道心录（05 §3.3）----------
+  // ---------- 局末道心录：模板生成 ----------
   function generateDiary(runData) {
-    var G = DF.G;
-    var st = G.settings || {};
-    var key = (st.aiKey || '').trim();
-    var endpoint = (st.baseURL || '').trim();
-    var model = (st.model || 'gpt-4o-mini').trim();
-
-    function template() {
-      return { text: buildTemplateDiary(runData), source: 'template' };
-    }
-    if (!key || !endpoint || typeof fetch !== 'function') {
-      return Promise.resolve(template());
-    }
-
-    var prompt = [
-      '你是《仙途·飞升录》这道虚构仙途的司笔仙童。请根据下面这一局的道途，写一段 60-100 字的中文道心录。',
-      '',
-      '【硬性约束】',
-      '1. 只写虚构的修仙叙事，第二人称"你"。',
-      '2. 严禁出现算命、占卜、运势、命理、风水、星座、塔罗、卜卦、预测吉凶、八字、转世等任何词汇或暗示。',
-      '3. 不要做任何关于现实未来的预测或吉凶判断。',
-      '4. 不要输出 JSON，不要输出标题，只输出日记正文一段。',
-      '',
-      '【本局道途】',
-      JSON.stringify(runData || {})
-    ].join('\n');
-
-    var timeout = (DF.CST && DF.CST.AI_TIMEOUT) || 8000;
-    var ac = null;
-    try { ac = (typeof AbortController !== 'undefined') ? new AbortController() : null; } catch (e) { ac = null; }
-
-    return new Promise(function (resolve) {
-      var done = false;
-      function finish(v) { if (done) return; done = true; clearTimeout(timer); resolve(v); }
-      var timer = setTimeout(function () {
-        if (ac && ac.abort) { try { ac.abort(); } catch (e) { } }
-        finish(template());
-      }, timeout);
-
-      var opts = {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-        body: JSON.stringify({
-          model: model, temperature: 0.95,
-          messages: [{ role: 'user', content: prompt }]
-        })
-      };
-      if (ac) opts.signal = ac.signal;
-
-      try {
-        Promise.resolve(fetch(endpoint, opts)).then(function (res) {
-          if (!res || !res.ok) { finish(template()); return null; }
-          return res.json();
-        }).then(function (j) {
-          if (done || !j) return;
-          var txt = '';
-          if (j.choices && j.choices[0] && j.choices[0].message) txt = j.choices[0].message.content || '';
-          txt = String(txt).trim().replace(/^["'\u201C]|[\"'\u201D]$/g, '');
-          if (!txt || txt.length < 8 || U.hasForbidden(txt)) { finish(template()); return; }
-          finish({ text: txt.slice(0, 220), source: 'ai' });
-        }).catch(function () { finish(template()); });
-      } catch (e) { finish(template()); }
-    });
+    return Promise.resolve({ text: buildTemplateDiary(runData), source: 'template' });
   }
 
-  // 模板道心录（无 Key / 超时 / 违规降级）
+  // 模板道心录
   function buildTemplateDiary(runData) {
     var d = runData || {};
     var themeId = d.theme || 'invert';
@@ -7381,12 +6983,9 @@ body{
   };
 
   DF.AI = {
-    SYSTEM_PROMPT: SYSTEM_PROMPT,
-    FULL_SYSTEM_PROMPT: FULL_SYSTEM_PROMPT,
     generateDream: generateDream,
     generateDiary: generateDiary,
     seedFallback: seedFallback,
-    extractJSON: extractJSON,
     buildTemplateDiary: buildTemplateDiary
   };
 
@@ -7597,38 +7196,31 @@ body{
     if (DF.AUDIO && DF.AUDIO.themeChange) DF.AUDIO.themeChange(G.theme.id);
   }
 
-  // ==================== 选路 ====================
+  /* ==================== 关卡推进（弃用「择路」页） ====================
+   * 纯肉鸽改版后，整局是同一片道场里的连续波次，早就不再有"选下一道门"这回事。
+   * 那个页面只是从旧楼层结构里留下来的残壳：正常游戏中永远进不去，
+   * 一旦因为异常路径（旧存档 / 外部脚本 / 测试直接造节点）被推进去，
+   * 玩家就会看到一个只有两张卡、且点不动的死页面 —— 比崩溃更难解释。
+   *
+   * 现在这里不再切场景：无论从哪条路径调进来，都直接保证「回到能玩的状态」。
+   * 函数名保留（enterRoute / chooseNode 是 CONTRACT §5 的接口名，
+   * 99-main 的测试钩子和部分外部脚本仍按这个名字调用）。
+   */
   function enterRoute() {
     var G = DF.G;
-    DF.setScene('ROUTE');
-    if (DF.UI && DF.UI.show) DF.UI.show('route');
-    if (DF.UI && DF.UI.renderRoute) DF.UI.renderRoute();
+    // 有波次系统就走波次；否则至少别把玩家丢进一个不存在的场景
+    if (DF.WORLD && DF.WORLD.arenaNextWave && G.run && G.run.blueprint) {
+      DF.WORLD.arenaNextWave();
+      return true;
+    }
+    DF.setScene('PLAYING');
+    if (DF.UI && DF.UI.show) DF.UI.show('none');
+    return false;
   }
 
-  // 玩家选定一个节点
+  /** 兼容入口：旧调用方按节点 id 选路。现在整局只有一片道场，节点概念已废弃。 */
   function chooseNode(nodeId) {
-    var G = DF.G;
-    var floor = DF.WORLD.currentFloor();
-    var node = DF.WORLD.findNode(floor, nodeId);
-    if (!node) return false;
-    G.run.nodeId = node.id;
-    G.run.path.push(node.id);
-    DF.WORLD.enterRoom(node);
-    DF.setScene('PLAYING');
-    // v2：进战斗开程序化 BGM
-    if (DF.AUDIO && DF.AUDIO.bgmStart) DF.AUDIO.bgmStart(G.theme.id);
-    if (DF.UI && DF.UI.show) DF.UI.show('none');
-    // C4：主题规则卡（仅首次进入该主题）
-    if (!G.theme.ruleCardShown) {
-      G.theme.ruleCardShown = true;
-      G.theme.ruleCardT = 3.4;
-    }
-    // v2：新手引导（仅首次进战斗类房间，读过就不再弹）
-    if ((node.type === 'combat' || node.type === 'elite') &&
-        DF.UI && DF.UI.maybeShowTutorial) {
-      DF.UI.maybeShowTutorial();
-    }
-    return true;
+    return enterRoute();
   }
 
   // 房间清场后 → 下一个可前进节点 / 下一层
@@ -7683,29 +7275,44 @@ body{
     if (DF.WORLD && DF.WORLD.arenaWaveCleared) DF.WORLD.arenaWaveCleared();
 
     var advance = function () {
-      if (DF.WORLD && DF.WORLD.arenaNextWave) {
-        DF.WORLD.arenaNextWave();
+      if (!DF.WORLD || !DF.WORLD.arenaNextWave) return;
+      /* 护栏：升级卡 / 武器卡是模态的，玩家还在读卡的时候不能推进波次 ——
+         否则卡面背后整波敌人被换掉，玩家关掉卡会发现自己"白捡一波"。
+         把推进挂到 _afterTalent，关卡时由 resumeAfterTalent 接手。 */
+      var sc = DF.G.scene;
+      if (sc === 'TALENT' || sc === 'CARD') {
+        DF.G.run._afterTalent = function () {
+          if (DF.WORLD && DF.WORLD.arenaNextWave) DF.WORLD.arenaNextWave();
+        };
+        return;
       }
+      DF.WORLD.arenaNextWave();
     };
 
-    /* 破境三选一：每波清完都弹（Boss 波也弹，否则 10 波后成长断档）。
-       选完由 DF.FSM.resumeAfterTalent 接回来推进下一波。 */
-    if (DF.UI && DF.UI.showTalentCard && DF.UI.showTalentCard()) {
-      G.run._afterTalent = advance;
-      return;
-    }
-
+    /* 9e：清波后不再自动弹三选一 —— 升级改由「修为攒满」驱动（见 updatePlaying 里的
+       tryLevelUp 调用）。清完波直接进下一波，节奏更连贯；
+       如果这一波恰好也攒满了修为，tryLevelUp 会在下一帧接手。 */
     advance();
   }
 
-  /** M2：三选一结束后继续推进（选了 / 跳过都走这里，避免卡在空场景） */
+  /**
+   * 三选一结束后的收尾（选了 / 跳过都走这里）。
+   *
+   * 9e 之后这个函数只负责「清标记 + 回到游戏」：
+   * 升级不再和波次绑定，所以没有"选完就要推进下一波"这回事了 ——
+   * 之前那个 else 分支会在选完卡片的瞬间把玩家推进到下一波，
+   * 而那时本波其实还没打完（升级可能在波中间发生），整波敌人会被清掉。
+   */
   function resumeAfterTalent() {
     var G = DF.G;
     var fn = G.run && G.run._afterTalent;
     if (G.run) G.run._afterTalent = null;
-    if (typeof fn === 'function') fn();
-    else if (DF.WORLD && DF.WORLD.arenaNextWave) DF.WORLD.arenaNextWave();
-    else enterRoute();
+    if (typeof fn === 'function') { fn(); return; }
+    /* 兜底：确保回到游玩态。不能调 arenaNextWave —— 会把未打完的波冲掉。 */
+    if (DF.G.scene === 'TALENT') {
+      DF.setScene('PLAYING');
+      if (DF.UI && DF.UI.show) DF.UI.show('none');
+    }
   }
 
   /**
@@ -7781,8 +7388,10 @@ body{
       + S.themeBonus;
     // 收集到的星尘也计入
     stardust += (G.run.stardust || 0);
-    // 降级局 ×0.85（R1 反向激励填 Key）
-    if (G.run.source !== 'ai') stardust = Math.round(stardust * S.degradedMult);
+    /* 历史上这里对"无 Key 降级局"乘 0.85，用来反向激励填 Key。
+       零联网后不存在"在线局"，每一局都是种子生成 —— 再乘就是无条件扣 15%，
+       所以系数保留在表里（存档/文档仍引用这个键），这里不再应用。 */
+    // if (G.run.source !== 'ai') stardust = Math.round(stardust * S.degradedMult);
     G.run.stardust = Math.round(stardust);
 
     // 持久化（06 §3.2）
@@ -7851,7 +7460,7 @@ body{
 
   function restart() {
     var G = DF.G;
-    if (G.scene === 'RESULT' || G.scene === 'PLAYING' || G.scene === 'PAUSED' || G.scene === 'ROUTE') {
+    if (G.scene === 'RESULT' || G.scene === 'PLAYING' || G.scene === 'PAUSED') {
       var mood = G.run.mood;
       startRun({ mood: mood });
     }
@@ -7918,6 +7527,56 @@ body{
     }
   }
 
+  /**
+   * 9e 修为升级检查。
+   * 返回 true 表示这一帧升级并弹了卡（调用方随后应让世界冻结）。
+   *
+   * 设计要点：
+   *   · xp 可能一次超过多级需求（吃大珠 / 连吃），while 循环吃干净；
+   *   · 卡片一次只弹一张 —— 一次弹多张会让玩家连点，反而看不清选项；
+   *   · 剩余 xp 保留到下一级，不浪费（否则玩家会觉得"白捡了"）。
+   */
+  function tryLevelUp() {
+    var G = DF.G;
+    var p = G.player;
+    if (!p || !p.alive) return false;
+    if (G.scene !== 'PLAYING') return false;
+    if (G.run.ended) return false;
+    var cfg = DF.XP || {};
+    var maxLv = cfg.maxLevel || 30;
+    var leveled = 0;
+    var guard = 0;
+    while (guard++ < 64) {
+      var lv = Math.max(1, p.level || 1);
+      if (lv >= maxLv) break;
+      var need = DF.xpNeed(lv);
+      if ((p.xp || 0) < need) break;
+      p.xp = (p.xp || 0) - need;
+      p.level = lv + 1;
+      leveled++;
+    }
+    if (!leveled) return false;
+
+    // 升级反馈：文字 + 音效 + 轻微震屏（不改任何玩法数值）
+    if (DF.POOL.popText) {
+      var t1 = DF.POOL.popText(p.x, p.y - 74, '修为 · Lv.' + p.level, '#5FFBC1', 22);
+      if (t1) { t1.scale = 1.25; t1.pop = 0.14; t1.vy = -46; t1.maxLife = 1.6; }
+    }
+    if (DF.AUDIO && DF.AUDIO.relic) DF.AUDIO.relic();
+    if (G.settings && G.settings.shake) {
+      G.cam.trauma = Math.min(1, (G.cam.trauma || 0) + 0.18);
+    }
+
+    /* 弹一次择道心。弹不出（次数用尽 / DOM 不可用 / 无候选）就什么都不做 ——
+       修为照常累加，玩家不会因为"卡池空了"而卡住。 */
+    if (DF.UI && DF.UI.showTalentCard && DF.UI.showTalentCard()) {
+      G.run._afterTalent = function () {
+        // 选完继续留在当前波；不打波就什么都不用推进
+      };
+    }
+    return true;
+  }
+
   function updatePlaying(dt) {
     var G = DF.G;
     var p = G.player;
@@ -7981,6 +7640,13 @@ body{
       }
     }
 
+    /* 9e 修为升级：经验攒满 → 升级 → 弹一次择道心。
+       放在实体更新之后、清场判定之前，因为：
+         · 必须等 updatePickups 把这一帧的珠子算进 xp；
+         · 必须在 checkClear 触发 onRoomCleared 之前，否则升级卡会和进波撞在一起。
+       升级可能连跳多级（吃了大珠），用 while 一次吃干净，卡片只弹一次。 */
+    tryLevelUp();
+
     // 玩家死亡
     if (!p.alive && !G.run.ended) {
       endRun('dead');
@@ -8022,6 +7688,7 @@ body{
     chooseNode: chooseNode,
     onRoomCleared: onRoomCleared,
     resumeAfterTalent: resumeAfterTalent,
+    tryLevelUp: tryLevelUp,
     endRun: endRun,
     togglePause: togglePause,
     restart: restart,
@@ -9663,6 +9330,34 @@ var DF = DF || {};
       ctx.fillStyle = 'rgba(255,255,255,.95)';
       ctx.fill();
       ctx.shadowBlur = 0;
+      ctx.restore();
+    } else if (kind === 'xp') {
+      /* 9e 修为珠：薄荷绿实心圆 + 内白核。
+         与灵气的金色四角星、梦尘的六角晶体三者形状完全不同，
+         不靠颜色也能区分（色盲友好 art §7）。大珠（value 3）画得更大更亮。 */
+      var xr = p.r || ((DF.XP || {}).orbR || 5);
+      var big = !!p.big || (p.value || 1) > 1;
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.shadowBlur = big ? 16 : 9;
+      ctx.shadowColor = COL.mint;
+      ctx.beginPath();
+      ctx.arc(0, 0, xr, 0, TAU);
+      ctx.fillStyle = hexA(COL.mint, 0.92);
+      ctx.fill();
+      /* 内白核：小珠给 40% 半径，大珠给中心一点 + 外环，读起来"更贵重" */
+      ctx.shadowBlur = 0;
+      ctx.beginPath();
+      ctx.arc(0, 0, big ? xr * 0.34 : xr * 0.42, 0, TAU);
+      ctx.fillStyle = 'rgba(255,255,255,.96)';
+      ctx.fill();
+      if (big) {
+        ctx.beginPath();
+        ctx.arc(0, 0, xr * 0.72, 0, TAU);
+        ctx.lineWidth = 1.4;
+        ctx.strokeStyle = 'rgba(255,255,255,.70)';
+        ctx.stroke();
+      }
       ctx.restore();
     } else if (kind === 'hp') {
       /* 十字药丸（形状信息，色盲可辨 art §7） */
@@ -11919,7 +11614,9 @@ var DF = DF || {};
     var px = 18;
     var py = 584;
     var pw = 364;
-    var ph = 118;
+    /* 9e：从 118 加到 126 —— 多出的 8px 是给修为行留的，
+       否则底部提示行（y=690）会顶到修为行的字上。 */
+    var ph = 126;
 
     glassPanel(ctx, px, py, pw, ph, 12, accent);
 
@@ -12003,6 +11700,25 @@ var DF = DF || {};
       txt(ctx, '!', 366, 662, 11 * TS, hexA(COL.red, sanPulse), 'right', true, 700);
     }
 
+    /* 9e 修为条：HP / 道心 之后第三根条。
+       几何刻意与道心条完全对齐（同一左端 x=78、同一宽 288），
+       只是更细（7px→5px）—— 三条左端不齐会看起来像随手摆的。
+       标签放进条内左侧，数值右对齐到 366（与 HP 的 93/100 同一条右基准线）。 */
+    var xps = (DF.xpState ? DF.xpState(p) : { level: 1, xp: 0, need: 8, pct: 0 });
+    var xpY = 678;
+    txt(ctx, '修为 ' + xps.level, 34, xpY, 10 * TS, 'rgba(190,215,245,.78)', 'left', false, 500);
+    hudBar(ctx, 78, xpY - 9, 288, 5, xps.pct, COL.mint, 'rgba(95,251,193,.14)', 2.5);
+    txt(ctx, xps.xp + ' / ' + xps.need, 366, xpY, 10 * TS,
+      xps.pct >= 1 ? hexA(COL.mint, 0.98) : 'rgba(190,215,245,.72)', 'right', false, 500);
+    /* 攒满时描边脉冲：告诉玩家"马上要升级了"，不用盯数字 */
+    if (xps.pct >= 1) {
+      var _xpPulse = _reduce ? 0.8 : (0.45 + 0.55 * Math.abs(Math.sin(_time * 7)));
+      rr(ctx, 77, xpY - 10, 290, 7, 3.5);
+      ctx.lineWidth = 1.6;
+      ctx.strokeStyle = hexA(COL.mint, _xpPulse);
+      ctx.stroke();
+    }
+
     /* 底部提示行 */
     var hint = '';
     if (G.bt && G.bt.active) hint = '神识展开 · ' + (G.bt.timer || 0).toFixed(1) + 's';
@@ -12012,7 +11728,7 @@ var DF = DF || {};
       hint = (G.room.node && G.room.node.arena) ? '本波已清 · 破境择道心' : '阵门已开 · 前往右侧光门';
     }
     if (hint) {
-      txt(ctx, hint, 34, 690, 10 * TS, hexA(accent, 0.9), 'left', false, 500);
+      txt(ctx, hint, 34, 700, 10 * TS, hexA(accent, 0.9), 'left', false, 500);
     }
   }
 
@@ -12304,7 +12020,7 @@ var DF = DF || {};
   var DF = (typeof window !== 'undefined' && window.DF) || {};
   var U = DF.U;
 
-  var SCREENS = ['menu', 'settings', 'route', 'result', 'pause', 'codex', 'achv', 'forge', 'loading'];
+  var SCREENS = ['menu', 'settings', 'result', 'pause', 'codex', 'achv', 'forge', 'loading'];
   var el = {};
   var selectedMood = 'calm';
   var bound = false;
@@ -12329,18 +12045,12 @@ var DF = DF || {};
     el.btnSettings = $('df-btn-settings');
     el.btnCodex = $('df-btn-codex');
     el.settings = $('df-settings');
-    el.setKey = $('df-set-key');
-    el.setBase = $('df-set-baseurl');
-    el.setModel = $('df-set-model');
     el.setColors = $('df-set-colors');
     el.setReduce = $('df-set-reduce');
     el.setShake = $('df-set-shake');
     el.setAutofire = $('df-set-autofire');
     el.setTextScale = $('df-set-textscale');
     el.btnSettingsBack = $('df-btn-settings-back');
-    el.route = $('df-route');
-    el.routeInfo = $('df-route-info');
-    el.routeNodes = $('df-route-nodes');
     el.result = $('df-result');
     el.resultTitle = $('df-result-title');
     el.resultBody = $('df-result-body');
@@ -12438,16 +12148,6 @@ var DF = DF || {};
     });
     on(el.setColors, 'change', function () { applyA11yClasses(); });
     on(el.setReduce, 'change', function () { applyA11yClasses(); });
-
-    // ---- 选路 ----
-    if (el.routeNodes) {
-      el.routeNodes.addEventListener('click', function (e) {
-        var card = e.target && e.target.closest ? e.target.closest('.df-route-card') : null;
-        if (!card || card.disabled) return;
-        var id = card.getAttribute('data-node');
-        if (id && DF.FSM && DF.FSM.chooseNode) DF.FSM.chooseNode(id);
-      }, false);
-    }
 
     // ---- 结算 ----
     on(el.btnAgain, 'click', function () {
@@ -12604,9 +12304,6 @@ var DF = DF || {};
   function readSettingsFromDOM() {
     var G = DF.G;
     var s = U.deepClone(G.settings || DF.defaultSettings());
-    if (el.setKey) s.aiKey = String(el.setKey.value || '').trim();
-    if (el.setBase) s.baseURL = String(el.setBase.value || '').trim();
-    if (el.setModel) s.model = String(el.setModel.value || '').trim() || 'gpt-4o-mini';
     if (el.setColors) s.colorBlind = !!el.setColors.checked;
     if (el.setReduce) s.reduceMotion = !!el.setReduce.checked;
     if (el.setShake) s.shake = !!el.setShake.checked;
@@ -12634,9 +12331,6 @@ var DF = DF || {};
   function applySettingsToDOM() {
     var G = DF.G;
     var s = G.settings || DF.defaultSettings();
-    if (el.setKey) el.setKey.value = s.aiKey || '';
-    if (el.setBase) el.setBase.value = s.baseURL || '';
-    if (el.setModel) el.setModel.value = s.model || 'gpt-4o-mini';
     if (el.setColors) el.setColors.checked = !!s.colorBlind;
     if (el.setReduce) el.setReduce.checked = !!s.reduceMotion;
     if (el.setShake) el.setShake.checked = s.shake !== false;
@@ -12684,57 +12378,6 @@ var DF = DF || {};
     try { b = DF.PERSIST ? DF.PERSIST.loadBest() : null; } catch (e) { b = null; }
     if (!b || !b.runs) { valueNode.textContent = '— 尚未踏入仙途 —'; return; }
     valueNode.textContent = '最佳 ' + U.fmtNum(b.bestStardust) + ' 灵气 · 最高 第 ' + U.fmtNum(b.bestFloors) + ' 波';
-  }
-
-  // ==================== 选路页 ====================
-  function renderRoute() {
-    if (!el.routeNodes) return;
-    var G = DF.G;
-    var floor = DF.WORLD ? DF.WORLD.currentFloor() : null;
-    var options = DF.WORLD ? DF.WORLD.routeOptions() : [];
-
-    // ---- 顶部信息条 ----
-    if (el.routeInfo) {
-      var items = el.routeInfo.querySelectorAll('.df-info-value');
-      var p = G.player;
-      var wname = (p && p.weapon) ? p.weapon.name : '—';
-      var vals = [
-        '第 ' + (G.run.wave || 1) + ' 波',
-        G.theme.name || G.theme.id,
-        U.fmtNum(G.run.stardust || 0),
-        wname
-      ];
-      for (var i = 0; i < items.length && i < vals.length; i++) items[i].textContent = vals[i];
-    }
-
-    // ---- 候选卡片 ----
-    var html = '';
-    for (var j = 0; j < options.length; j++) {
-      var n = options[j];
-      var rt = (DF.ROOM_TYPES || {})[n.type] || { name: n.type, icon: '?', desc: '', color: '#54E6FF' };
-      var typeKey = n.type === 'relic' ? 'treasure' : n.type;
-      var enemyTxt = '';
-      if (n.enemyMix) {
-        var pips = '';
-        for (var k in n.enemyMix) {
-          if (!Object.prototype.hasOwnProperty.call(n.enemyMix, k)) continue;
-          var en = (DF.ENEMY_CONFIG || {})[k];
-          var enName = en ? en.name : k;
-          for (var c = 0; c < Math.min(n.enemyMix[k], 4); c++) pips += '<span class="df-enemy-pip"></span>';
-          enemyTxt += enName + ' ×' + n.enemyMix[k] + ' ';
-        }
-        if (pips) enemyTxt = enemyTxt.trim();
-      }
-      if (n.type === 'boss') enemyTxt = (DF.BOSS_CONFIG && DF.BOSS_CONFIG.nebula_eye) ? DF.BOSS_CONFIG.nebula_eye.name : 'Boss';
-      html += '<button type="button" class="df-route-card" data-node="' + esc(n.id) + '" data-type="' + esc(typeKey) + '">';
-      html += '<div class="df-route-icon" aria-hidden="true">' + esc(rt.icon || '?') + '</div>';
-      html += '<div class="df-route-title">' + esc(rt.name || n.type) + '</div>';
-      html += '<div class="df-route-desc">' + esc(rt.desc || '') + '</div>';
-      if (enemyTxt) html += '<div class="df-route-enemies">' + esc(enemyTxt) + '</div>';
-      html += '</button>';
-    }
-    if (!html) html = '<p class="df-empty">这一层已经走到尽头。</p>';
-    el.routeNodes.innerHTML = html;
   }
 
   // ==================== 结算页 ====================
@@ -13786,7 +13429,6 @@ var DF = DF || {};
     show: show,
     selectMood: selectMood,
     getMood: getMood,
-    renderRoute: renderRoute,
     renderResult: renderResult,
     renderResultLoading: renderResultLoading,
     renderCodex: renderCodex,
@@ -14680,7 +14322,7 @@ var DF = DF || {};
     var MAX_STEPS = 5;                 // 单帧最多补 5 步，防卡死
 
     if (G.scene === 'PLAYING' || G.scene === 'MENU' || G.scene === 'RESULT' ||
-        G.scene === 'ROUTE' || G.scene === 'LOADING' || G.scene === 'PAUSED') {
+        G.scene === 'LOADING' || G.scene === 'PAUSED') {
       acc += dt;
       while (acc >= STEP && stepped < MAX_STEPS) {
         if (DF.FSM && DF.FSM.update) DF.FSM.update(STEP);
@@ -14865,7 +14507,11 @@ var DF = DF || {};
           G.run.floorsCleared = wi;
           if (G.room.type === 'boss') G.run.bossKilled = true;
           if (DF.WORLD.arenaWaveCleared) DF.WORLD.arenaWaveCleared();
-          if (DF.UI && DF.UI.showTalentCard) DF.UI.showTalentCard();
+          /* 9e：真实游玩里升级由「修为攒满」驱动，不再按波次给卡。
+             仿真必须同口径，否则压测的强度曲线与实机对不上。
+             无头环境没有 DOM，showTalentCard 会静默返回 false，
+             所以这里只有等级会推进，不会凭空多出天赋。 */
+          if (DF.FSM && DF.FSM.tryLevelUp) DF.FSM.tryLevelUp();
         }
       }
 
@@ -15157,10 +14803,11 @@ var DF = DF || {};
       gen: function (seed) { return DF.WORLD.gen(seed); },
       validateBlueprint: function (obj) { return U.validateBlueprint(obj); },
       validateFloorGraph: function (f) { return U.validateFloorGraph(f); },
+      /* 保留 ai.* 钩子名：外部脚本 / 回归工具仍按这个名字取本地生成器。
+         现在两者都不联网 —— generateDream 只是把种子蓝图包成 Promise。 */
       ai: {
         generateDream: function (seed, ctx) { return DF.AI.generateDream(seed, ctx); },
         seedFallback: function (seed) { return DF.AI.seedFallback(seed); },
-        extractJSON: DF.AI.extractJSON,
         buildTemplateDiary: DF.AI.buildTemplateDiary
       },
       simulateHeadless: simulateHeadless,
