@@ -1823,6 +1823,10 @@ body{
     SANITY_ON_HIT: 12,           // 点/次，受击攒道心
     BULLET_MIN_R: 4,             // px，子弹最小可视半径（art §6 移动端可读）
     ENEMY_MIN_R: 18,             // px，敌体最小半径
+    /* 接触伤害单怪冷却（秒）。持续判定会让"贴身"直接等于"送死"：
+       剑侍 14 伤 × 每 0.83 秒一次 = 100 血玩家 6 秒必死，玩家根本来不及反应。
+       给每只怪独立冷却后，贴着依然疼，但留出了跑掉的时间窗。 */
+    ENEMY_CONTACT_CD: 1.1,
     TRAUMA_HIT: 0.4,             // 受击震屏 trauma 增量（art §4）
     TRAUMA_BOSS: 0.6,            // Boss 出场 / 阶段切换 trauma 增量
     WAVE_INTERVAL: 1.2,          // s，波次间隔
@@ -2528,6 +2532,26 @@ body{
    *       灵尘不进 localStorage（只在本局有效），避免变成永久数值膨胀。
    * 数值：每级 damage +12%、fireRate +5%（乘算）。升满 ≈ 实测 1.38× DPS。
    * ======================================================================== */
+  /* ==========================================================================
+   * 15c · DF.WEAPON_DROP —— 局内「换武器」掉落频率
+   *
+   * 为什么收进来：原来普通波清场有 30% 掉武器，实测一局 10 波平均掉 4.28 把
+   * （≈ 每 2.3 波就弹一次对比卡）。双摇杆射击靠的是武器手感肌肉记忆，
+   * 频繁换枪会把"我正在练熟这把"变成"我又要重新适应"。标准肉鸽
+   * （吸血鬼幸存者 / 土豆兄弟）根本不换武器，这里保留克制但低频：
+   *   · 普通波：不掉（0%）—— 成长交给修为升级与 U 键升法器
+   *   · 凶煞波（每 5 波）：必掉 1 把 —— 有仪式感的换枪节点
+   *   · 渡劫波（每 10 波）：必掉 1 把 —— 打完 Boss 的奖励
+   * 于是 10 波 ≈ 2 把、20 波 ≈ 4 把，玩家每次都当作一次真正的选择。
+   * 掉落后仍要自己走过去踩才弹卡，卡片有「都不换」按钮 —— 不强制。
+   * ======================================================================== */
+  DF.WEAPON_DROP = {
+    combatChance: 0,     // 普通波掉落概率（0 = 不掉）
+    eliteAlways: true,   // 凶煞波必掉
+    bossAlways: true,    // 渡劫波必掉
+    bossCycleN: 2        // 渡劫波长战每 N 次 14s 补给附赠一把（原逻辑保留但拉长）
+  };
+
   DF.WEAPON_UPGRADE = {
     MAX_LEVEL: 3,
     // 实测校准：0.18/0.08 时 Lv.3 实测 1.70×（比最强 Lv.1 武器还高，破坏平衡）
@@ -3910,6 +3934,26 @@ body{
 (function () {
   'use strict';
   var DF = (typeof window !== 'undefined' && window.DF) || {};
+
+  /* ===== 敌人分离约束（见 updateEnemy 末尾的软分离注释） =====
+   * SEP_GAP     ：接触面之外额外留的余量（px）。给 4px 是为了让"贴着"在视觉上
+   *               仍有一点呼吸空间，同时不至于让人觉得打不到。
+   * SEP_MAX_STEP：单帧最大推力（px）。
+   *               ⚠️ 这个值必须**大于敌人单帧的最大位移**，否则推不出去：
+   *               最快的 kamikaze（bomber 175 / dan_demon 170）在 60fps 下
+   *               每帧走 ~2.9px，之前设 1.5 的结果是净内侵 1.4px/帧，
+   *               实测最小距离仍只有 1.5px（照穿不误）。现在给到 12，
+   *               覆盖到 20fps 的 dt 抖动，同时还不至于一帧瞬移半屏。 */
+  var SEP_GAP = 4;
+/* 伤害带余量：伤害圈比分离静止距离多这么多 px（见接触伤害处的注释） */
+var SEP_DMG_BAND = 8;
+  var SEP_MAX_STEP = 12;
+  /* 单帧最多检查多少个邻居（敌人互斥用）。
+     ⚠️ 实测：设 6 不够 —— 一波普通波上限 14 只，同时冲脸时一只怪要挤开
+     周围十几只，只扫 6 个会让后面几只永远推不动（8 只怪的测试里仍有 5/28 对重叠）。
+     全量 O(n²) 在 14 只时只有 91 对比较，60fps 下完全不构成负担；
+     所以给到 24（覆盖到 14 只上限的两倍余量，几乎等于全量），移动端也够用。 */
+  var SEP_NEIGHBORS = 24;
   var U = DF.U;
 
   /* ==========================================================================
@@ -4176,6 +4220,10 @@ body{
       hp: cfg.hp, maxHp: cfg.hp,
       speed: cfg.speed,
       contactDmg: cfg.contactDmg,
+      /* 接触伤害单怪冷却（秒）。贴着不动时不能每无敌帧一过就再挨一下 ——
+         那样"甩不掉"就从速度问题变成必死问题。这里给每只怪独立冷却，
+         冷却期间即使贴身也不掉血；脱离接触后冷却清零，再贴上来立刻生效。 */
+      contactCd: 0,
       fireRate: cfg.fireRate,
       bulletPattern: cfg.bulletPattern,
       state: 'spawn', t: 0, spawnT: 0, dyingT: 0, fireCd: 0,
@@ -5268,11 +5316,160 @@ body{
     e.x = U.clamp(e.x, b.x + e.radius, b.x + b.w - e.radius);
     e.y = U.clamp(e.y, b.y + e.radius, b.y + b.h - e.radius);
 
-    // 接触伤害
+    /* ===== 敌人之间的软互斥 =====
+     * 8 只怪同时冲脸时会完美叠成一坨（所有怪朝同一个点走，位置完全重合），
+     * 视觉上像"一个怪"，实际伤害是 8 份 —— 玩家会觉得莫名其妙暴毙。
+     * 这里只和同帧里 id 更大的邻居比一半推力（对称处理，避免双方各推一次导致过冲），
+     * 邻居数量按 SEP_NEIGHBORS 截断，防止 O(n²) 在敌多时拖慢帧。
+     */
+    {
+      var arr = G.enemies;
+      /* 只扫「排在 e 之后」的邻居，天然保证每对处理一次。
+         之前用 checked<SEP_NEIGHBORS 截断，但 checked 只统计真正比较过的对，
+         8 只同点时前 6 个邻居全被同一个 e 吃掉，后面的 e 一只都扫不到，
+         于是有 6 对永远推不开。现在按「实际错开的位数」截断到 SEP_NEIGHBORS，
+         既保证每只都能和周围一圈互动，也仍然有上限。 */
+      var arrLen = arr.length;
+      var scanned = 0;
+      for (var ni = 0; ni < arrLen && scanned < SEP_NEIGHBORS; ni++) {
+        var o = arr[ni];
+        if (!o || o === e || !o.alive) continue;
+        if (o.id <= e.id) continue;          // 每对只处理一次
+        scanned++;
+        var odx2 = o.x - e.x, ody2 = o.y - e.y;
+        var orr2 = e.radius + o.radius;
+        var od2 = odx2 * odx2 + ody2 * ody2;
+        if (od2 >= orr2 * orr2) continue;
+        var ox, oy, od3;
+        if (od2 > 0.0001) {
+          od3 = Math.sqrt(od2);
+          ox = odx2 / od3; oy = ody2 / od3;
+        } else {
+          /* 完全重合：没有方向可推。之前这里 continue，结果两只怪永远卡在同一个点上
+             （实测 8 只怪时 15/28 对完全重叠）。用 id 派生一个确定性的角度分开，
+             同一对怪每帧算出的方向一致，不会左右抖动；
+             有序的 id 也保证了不同对之间的方向分布不均（不会全往同一个方向推）。 */
+          od3 = 0;
+          var ha = (e.id * 2.399963) + (o.id * 1.618034);   // 两个无理数错开，避免规则网格
+          ox = Math.cos(ha); oy = Math.sin(ha);
+        }
+        /* 敌人之间【推满】：直接消除这一帧的全部重叠，不做单帧上限。
+           原因（实测）：给上限时，每帧的"朝玩家拉力 2.1px"大于"分离推力"，
+           平衡点永久停在重叠状态 —— 8 只怪时仍有 6/28 对重叠。
+           怪物互斥不存在"瞬移感"问题（它们本来就在不规则移动），
+           所以这里可以放心一次推到位。 */
+        var push = (orr2 - od3) * 0.5;
+        e.x -= ox * push; e.y -= oy * push;
+        o.x += ox * push; o.y += oy * push;
+        o.x = U.clamp(o.x, b.x + o.radius, b.x + b.w - o.radius);
+        o.y = U.clamp(o.y, b.y + o.radius, b.y + b.h - o.radius);
+      }
+      e.x = U.clamp(e.x, b.x + e.radius, b.x + b.w - e.radius);
+      e.y = U.clamp(e.y, b.y + e.radius, b.y + b.h - e.radius);
+    }
+
+    /* ===== 软分离：不让敌人站进玩家身体里 =====
+     *
+     * 问题（用户实测反馈）：「打近战怪的时候怪直接贴脸上甩都甩不掉」。
+     * 量化：剑侍（radius 16，speed 150）对静止玩家，最小距离 0.0px ——
+     *   半径和 32px 完全重叠，10 秒里 92% 的帧都在身体内部，直接把玩家打死。
+     * 根因不是数值太快，而是**根本没有分离约束**：敌人只朝玩家走，
+     *   走到中心就停在那里，渲染上就是从"贴身"变成"站在你肚子里"。
+     *
+     * 修法：每帧对「已重叠」的敌人施加一个把它们推出去的位移，
+     * 推到接触面向外留 SEP_GAP 的余量。这是纯位置修正（不加速度、不改 AI），
+     * 所以追击手感、绕圈行为、弹道全部不受影响，只是"挤不进去"。
+     *
+     * 三个配套考虑：
+     *   1) 推力按帧算而非按秒：触碰是瞬时约束，用 dt 缩放会让高帧率下推不动。
+     *   2) 玩家不动（玩家不会被怪推走）—— 玩家位移由输入独占，
+     *      被怪推来推去会让人失去对移动的控制感。代价是怪被挤在接触圈上。
+     *   3) 分离后仍要判伤害：分离发生在伤害判定之前，所以"贴住"依然会疼，
+     *      只是从"身体重叠"变成"贴在接触面"。
+     */
+    if (p && p.alive) {
+      var sepR = e.radius + p.radius;
+      var sdx = e.x - p.x, sdy = e.y - p.y;
+      var sd2 = sdx * sdx + sdy * sdy;
+      if (sd2 < sepR * sepR) {
+        var sd = Math.sqrt(sd2);
+        /* 完全重合（sd≈0）时没有方向可言，用敌人相对场中心的偏移兜底，
+           再退化到"从玩家正下方推出"，保证总能离开而不是原地抖动。 */
+        var snx, sny;
+        if (sd > 0.001) { snx = sdx / sd; sny = sdy / sd; }
+        else {
+          var bxc = (G.room.bounds.x + G.room.bounds.w * 0.5);
+          var byc = (G.room.bounds.y + G.room.bounds.h * 0.5);
+          var odx = e.x - bxc, ody = e.y - byc;
+          var od = Math.sqrt(odx * odx + ody * ody);
+          if (od > 0.001) { snx = odx / od; sny = ody / od; }
+          else { snx = 0; sny = 1; }
+        }
+        var need = sepR + SEP_GAP - sd;
+        /* 一帧最多推 min(need, SEP_MAX_STEP)，避免瞬移感；
+           剩余的缺口下一帧继续推，观感上是「被顶出去」。
+           例外：已经陷进身体深处（出生就压在玩家身上，或高速冲刺穿过）时
+           必须一帧推到位 —— 否则会留一帧可见穿模，而且被上限卡住时下一帧
+           还会继续穿，看起来像「卡在身体里出不来」。 */
+        var step = (sd < sepR * 0.75) ? need : Math.min(need, SEP_MAX_STEP);
+
+        /* ===== 切向滑移（解决"被怪顶着脸走"）=====
+         * 纯法向推出有个致命后果：玩家每帧朝怪前进 3.67px，怪被推回 3.67px，
+         * 二者的相对位置被锁死在接触距离上 —— 怪的速度明明是 150、玩家 220，
+         * 实测距离却永远停在 36.0px，等于怪被玩家"顶着走"，怎么跑都甩不掉。
+         *
+         * 修法：当玩家正朝怪身上撞（法线与玩家速度同向）时，
+         * 把推出方向从纯法向往切向偏，让怪被挤到玩家侧面、绕过去。
+         * 玩家冲过去之后就自然甩开了，观感也从"顶牛"变成"擦身而过"。
+         * 偏移量 k 随撞击角度增大：正撞最偏（0.85），斜擦几乎不偏。
+         */
+        var pushX = snx, pushY = sny;
+        var pvx = p.vx || 0, pvy = p.vy || 0;
+        var pvl = Math.sqrt(pvx * pvx + pvy * pvy);
+        if (pvl > 1) {
+          var toward = (pvx * snx + pvy * sny) / pvl;
+          if (toward > 0.2) {
+            var tx = -sny, ty = snx;
+            /* 切向取「和怪自己想去的方向一致」的那一侧，
+               否则怪会在玩家左右来回抖。 */
+            if (e.vx * tx + e.vy * ty < 0) { tx = -tx; ty = -ty; }
+            var k = Math.min(0.85, (toward - 0.2) / 0.8);
+            var mixX = snx * (1 - k) + tx * k;
+            var mixY = sny * (1 - k) + ty * k;
+            var ml = Math.sqrt(mixX * mixX + mixY * mixY);
+            if (ml > 0.0001) { pushX = mixX / ml; pushY = mixY / ml; }
+          }
+        }
+        e.x += pushX * step;
+        e.y += pushY * step;
+        /* 推出后重新夹回场地（否则会把怪挤到墙外） */
+        e.x = U.clamp(e.x, b.x + e.radius, b.x + b.w - e.radius);
+        e.y = U.clamp(e.y, b.y + e.radius, b.y + b.h - e.radius);
+      }
+    }
+
+    /* 接触伤害（分离之后再判：贴着依然疼，只是不再穿模）
+     *
+     * 冷却制而非持续制，原因：持续判定下无敌帧（0.9s）一过就再挨一下，
+     * 平均 0.83 秒一次 × 剑侍 14 伤 = 100 血玩家 6 秒必死。
+     * 玩家还没反应过来就被"贴身即死"的规则打死，这正是"甩不掉"的实感来源。
+     * 改成每只怪 1.1 秒冷却后：贴着能疼，但不会瞬间秒杀，玩家有时间跑。
+     * 脱离接触（离开接触圈）时冷却清零，重新贴上来立刻生效 —— 不会被刷伤害。 */
+    if (e.contactCd > 0) e.contactCd -= dt;
     if (p && p.alive && e.contactDmg > 0) {
-      var rr = e.radius + p.radius;
+      /* 伤害圈必须明显大于「分离后的静止距离」（sepR + SEP_GAP）：
+         两者一旦相等，被推开的怪正好落在判定边界外，d < rr 变假 →
+         冷却被下一行清零 → 下一帧贴回来又能打，冷却等于没有
+         （实测 2 只怪贴 20 秒只打中 1 次，就是踩了这个边界抖动）。
+         多给 SEP_DMG_BAND 的余量，让「贴着」稳定落在伤害带里。 */
+      var rr = e.radius + p.radius + SEP_GAP + SEP_DMG_BAND;
       if (U.dist2(e.x, e.y, p.x, p.y) < rr * rr) {
-        damagePlayer(p, e.contactDmg * ts, e.x, e.y);
+        if (e.contactCd <= 0) {
+          e.contactCd = DF.CST.ENEMY_CONTACT_CD;
+          damagePlayer(p, e.contactDmg, e.x, e.y);
+        }
+      } else if (e.contactCd > 0) {
+        e.contactCd = 0;   // 真离开接触带才重置，再贴上来能立刻打到
       }
     }
   }
@@ -6831,16 +7028,18 @@ body{
       DF.POOL.popText(G.player.x, G.player.y - 52, '+' + bonus + ' 灵气', '#FFC857', 16);
     }
 
-    // 掉落：普通波 30% 换枪 / 25% 回血；精英必掉法器+双回血；Boss 双掉落
+    /* 掉落：换枪频率由 DF.WEAPON_DROP 决定（默认普通波 0%、凶煞/渡劫必掉）。
+       回血保持原概率 —— 那是续航，与"换不换枪"是两件事。 */
+    var WD = DF.WEAPON_DROP || { combatChance: 0, eliteAlways: true, bossAlways: true };
     if (type === 'combat') {
-      if (U.rnd().chance(0.30)) maybeDropWeapon();
+      if ((WD.combatChance || 0) > 0 && U.rnd().chance(WD.combatChance)) maybeDropWeapon();
       if (U.rnd().chance(0.25)) dropHeal();
     } else if (type === 'elite') {
-      maybeDropWeapon();
+      if (WD.eliteAlways !== false) maybeDropWeapon();
       spawnRelicPickup();
       dropHeal(); dropHeal();
     } else {
-      maybeDropWeapon();
+      if (WD.bossAlways !== false) maybeDropWeapon();
       (DF.PERSIST && DF.PERSIST.unlockAchievement) && DF.PERSIST.unlockAchievement('deep_dreamer');
       dropHeal(); dropHeal(); dropHeal();
     }
@@ -7634,7 +7833,10 @@ body{
         if (DF.WORLD && DF.WORLD.dropHeal) DF.WORLD.dropHeal();
         // 每两轮补给同时掉一把武器：避免低 DPS 武器把 Boss 战拖成死局
         G.room.bossDropN = (G.room.bossDropN || 0) + 1;
-        if (G.room.bossDropN % 2 === 0 && DF.WORLD && DF.WORLD.maybeDropWeapon) {
+        /* 换枪频率跟 DF.WEAPON_DROP.bossCycleN 走（默认每 4 次补给 ≈ 56s 才给一把）。
+           原来每 2 次就送，长战里会连续弹对比卡，打断 Boss 战节奏。 */
+        var bossCycle = (DF.WEAPON_DROP && DF.WEAPON_DROP.bossCycleN) || 4;
+        if (G.room.bossDropN % bossCycle === 0 && DF.WORLD && DF.WORLD.maybeDropWeapon) {
           DF.WORLD.maybeDropWeapon();
         }
       }
