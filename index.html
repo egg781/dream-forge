@@ -6,6 +6,13 @@
 <meta name="theme-color" content="#0A0E27">
 <meta name="color-scheme" content="dark">
 <meta name="description" content="仙途·飞升录 Dream Forge · 单文件 HTML5 Canvas 双摇杆修仙肉鸽">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%230A0E27'/%3E%3Cpath d='M16 5 L16 24' stroke='%2354E6FF' stroke-width='2.5' stroke-linecap='round'/%3E%3Cpath d='M11 11 L21 11' stroke='%23B0342A' stroke-width='2.5' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='26' r='2.6' fill='%23FFC857'/%3E%3C/svg%3E">
+<meta property="og:title" content="仙途·飞升录 / Dream Forge">
+<meta property="og:description" content="水墨仙侠双摇杆肉鸽 · 单文件 HTML5 Canvas · 零依赖零联网 · 执飞剑、破六境、渡天劫">
+<meta property="og:type" content="website">
+<meta property="og:image" content="https://egg781.github.io/dream-forge/cover.png">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://egg781.github.io/dream-forge/cover.png">
 <title>仙途·飞升录 Dream Forge</title>
 <style>
 /* =============================================================================
@@ -2762,9 +2769,13 @@ body{
     // v2：本局若用彩蛋武器通关，优先取该武器的专属日记（CONTRACT-v2 §10）
     var tpl = DF.diaryTemplate(theme, result);
     if (v.result === 'win' && v.weaponId && DF.EGG_DIARY[v.weaponId]) tpl = DF.EGG_DIARY[v.weaponId];
+    /* v5：【波次兜底】{floors} 现在读「打到第几波」，最少是 1。
+       任何调用方仍按旧口径传 0（已清波数）时，这里统一归一成 1，
+       保证文案永远是「第 1 波」而不是「第 0 波 / 撑过 0 波」。 */
+    var floorsN = Math.max(1, Math.floor(Number(v.floors) || 0));
     return String(tpl)
       .replace(/\{stardust\}/g, v.stardust != null ? v.stardust : 0)
-      .replace(/\{floors\}/g, v.floors != null ? v.floors : 0)
+      .replace(/\{floors\}/g, floorsN)
       .replace(/\{weapon\}/g, v.weapon != null && v.weapon !== '' ? v.weapon : '空手');
   };
 
@@ -2854,6 +2865,11 @@ body{
         wave: 0,                 // 当前波次（1 起）
         waveBest: 0,             // 本局最高波次
         wavesCleared: 0,         // 已清波次
+        /* v5：玩家可见的「打到第几波」（1 起）。
+           wavesCleared 是"已清波数"，waveReached 是"打到了第几波"——
+           死在第一波时已清 0 波，但玩家该看到的是「第 1 波」，
+           结算页/分享/日记一律读这个字段，避免出现「波次 0 / 撑过 0 波」。 */
+        waveReached: 0,
         nextWaveT: 0,            // 波间休整倒计时（秒）
         roomsCleared: 0,         // 已清房间数（结算页新维度）
         noHitThisRoom: true,     // 本房间是否还无伤（成就 no_hit_room）
@@ -6851,6 +6867,7 @@ body{
     var G = DF.G;
     G.run.wave = 0;
     G.run.wavesCleared = 0;
+    G.run.waveReached = 0;   // v5：与 wavesCleared 一起归零，避免上一局残留值被 Math.max 带进来
     G.run.waveBest = 0;
     G.run.nextWaveT = 0;
     arenaEnterWave(1);
@@ -6872,6 +6889,9 @@ body{
 
     G.run.wave = n;
     G.run.waveBest = Math.max(G.run.waveBest || 0, n);
+    /* v5：玩家可见的波次（1 起）。与 wavesCleared（已清波数）分开记，
+       否则死在第一波时会显示「波次 0」。 */
+    G.run.waveReached = Math.max(G.run.waveReached || 0, n);
 
     var type = arenaWaveType(n);
     var mix = arenaComposition(n);
@@ -7323,9 +7343,11 @@ body{
     if (typeof pool === 'string') raw = pool;
     else if (pool && pool.length) raw = pool[Math.floor(U.rnd().next() * pool.length)];
     if (!raw) raw = '你在{theme}里走了很远，灵气在身后落成一条河。归途回望，只记得那些光。';
+    // v5：【波次兜底】{floors} = 打到第几波，最少 1（0 会渲成「撑过 0 波」，语义不通）
+    var floorsN = Math.max(1, Math.floor(Number(d.floors) || 0));
     return String(raw)
       .replace(/\{stardust\}/g, String(d.stardust || 0))
-      .replace(/\{floors\}/g, String(d.floors || 1))
+      .replace(/\{floors\}/g, String(floorsN))
       .replace(/\{weapon\}/g, String(d.weapon || '—'))
       .replace(/\{theme\}/g, String(d.themeName || themeId));
   }
@@ -7339,7 +7361,7 @@ body{
     if (d.result === 'win' && eggId && DF.EGG_DIARY && DF.EGG_DIARY[eggId]) {
       var eg = String(DF.EGG_DIARY[eggId])
         .replace(/\{stardust\}/g, String(d.stardust || 0))
-        .replace(/\{floors\}/g, String(d.floors || 0))
+        .replace(/\{floors\}/g, String(Math.max(1, Math.floor(Number(d.floors) || 0))))
         .replace(/\{weapon\}/g, String(d.weapon || '彩蛋武器'));
       if (eg.length > 8 && !U.hasForbidden(eg)) return eg;
     }
@@ -7347,7 +7369,7 @@ body{
       try {
         var txt = DF.diaryText(d.theme || 'invert', d.result === 'win' ? 'win' : 'dead', {
           stardust: d.stardust || 0,
-          floors: d.floors || 0,
+          floors: Math.max(1, Math.floor(Number(d.floors) || 0)),
           weapon: d.weapon || '空手',
           weaponId: eggId,
           result: d.result === 'win' ? 'win' : 'dead'
@@ -7460,6 +7482,7 @@ body{
          floorsTotal 仍保留（成就/存档 schema 依赖），只是不再出现在玩家视野。 */
       G.run.wavesCleared = 0;
       G.run.wave = 0;
+      G.run.waveReached = 0;
 
       /* v3：新玩家第一局不抽「低语之梦」。
          用户反馈（m03779）「为什么是反向的」——低语之梦会把移动与瞄准全部取负，
@@ -7739,6 +7762,13 @@ body{
     G.run.endReason = reason || 'dead';
     G.bt.active = false;
 
+    /* v5：【波次口径修正】玩家可见的「打到第几波」，1 起，与 wavesCleared（已清波数）分开。
+       必须在这里就算出来：下面的 recordRun 与日记/AI 入参都要用同一个值。
+       取值顺序 waveReached → wave → wavesCleared+1（兼容旧存档 / 测试直接造的局），
+       下限钳到 1 —— 死在第一波时这就是「第 1 波」而不是 0。 */
+    var waveReached = Math.max(1,
+      (G.run.waveReached || 0) || (G.run.wave || 0) || ((G.run.wavesCleared || 0) + 1));
+
     // 星尘结算（06 §3.1）
     var S = DF.STARDUST || { base: 50, perFloor: 30, bossKill: 200, perRelic: 15, themeBonus: 50, degradedMult: 0.85 };
     /* 纯肉鸽口径：原来的「层数 × perFloor」换成「波次 × perFloor」。
@@ -7758,12 +7788,13 @@ body{
     // 持久化（06 §3.2）
     if (DF.PERSIST) {
       /* bestFloors 这个存档字段名沿用旧键（内部 id 纪律 R1 / 存档 schema 兼容），
-         但它现在装的是「最高波次」。真实游玩里 floorsCleared 恒为 0（竞技场不推层），
-         所以这里必须显式传 wavesCleared，否则最高纪录永远是 0。 */
+         但它现在装的是「最高波次」。真实游玩里 floorsCleared 恒为 0（竞技场不推层）。
+         v5：必须写 waveReached 而不是 wavesCleared —— 死在第一波时后者是 0，
+         结算页历史行会渲染成「历史 · 最高 第 0 波」，与「波次 0」是同一处硬伤。 */
       DF.PERSIST.recordRun({
         stardust: G.run.stardust,
-        floors: G.run.wavesCleared || 0,
-        waves: G.run.wavesCleared || 0,
+        floors: waveReached,
+        waves: waveReached,
         win: reason === 'win'
       });
       DF.PERSIST.saveLastDream(G.run.blueprint);
@@ -7780,8 +7811,8 @@ body{
       seed: G.run.seed,
       theme: G.theme.id,
       themeName: G.theme.name,
-      floors: G.run.wavesCleared || 0,   // 日记模板里的 {floors} 现在读「撑过的波数」
-      waves: G.run.wavesCleared || 0,
+      floors: waveReached,              // 日记模板里的 {floors} = 打到第几波（1 起）
+      waves: waveReached,
       weapon: (G.player && G.player.weapon) ? G.player.weapon.name : '—',
       weaponId: (G.player ? G.player.weaponId : ''),
       relics: (G.player ? G.player.relics
@@ -8334,6 +8365,9 @@ var DF = DF || {};
   var _gBg = null;
   var _gVig = null;
   var _gFog = null;
+  var _gFieldVig = null;   // 道场场地落光（§10b，缓存；resize 时随 rebuildGradients 重建）
+  var _gArenaBg = null;    // 道场底色径向渐变（原来每帧 new，§10b 一并缓存）
+  var _arenaBgKey = '';
 
   var _gradPanel = {};
   var _gradNeb = {};
@@ -8358,6 +8392,12 @@ var DF = DF || {};
   var noiseX = [];
   var noiseY = [];
   var noiseS = [];
+
+  /* 道场地面的固定种子点云（§10b）。位置只在 init 期算一次，
+     运行时只让 alpha 随 G.time 呼吸 —— 否则每帧重新取随机会变成电视雪花。
+     formN = 噪点（圆盘内近似均匀），formS = 外圈径向短划（带方向）。 */
+  var formNX = [], formNY = [], formNSz = [];
+  var formSX = [], formSY = [], formSA = [], formSL = [];
 
   /* 主题名兜底表 */
   var THEME_NAME = {
@@ -8415,6 +8455,49 @@ var DF = DF || {};
       noiseX.push(rnd() * W);
       noiseY.push(rnd() * H);
       noiseS.push(1 + rnd() * 2.4);
+    }
+    buildArenaField(rnd);
+  }
+
+  /**
+   * §10b 道场地面点云的确定性生成（init 期一次，运行时零分配）。
+   *
+   * 坐标全部归一化到单位椭圆（-1..1），绘制时再乘可走区的半宽/半高 ——
+   * 这样点云永远跟场地比例严格对齐，不管窗口怎么缩放、bounds 怎么变。
+   *
+   * 目的：原来三圈阵纹是正圆（最大半径 318），而可走区是 1104×544 的椭圆带，
+   * 左右两侧各约 234px 宽、贯穿全高的带状区一点图案都没有，占总面积约 42%。
+   * 这里铺一层覆盖整块场地的极淡点云 + 一圈外环径向短划，让眼睛沿着地面
+   * 能一路扫到边界，但又不能亮到抢走敌人和子弹的对比度。
+   *
+   * 全部用传入的 visRng（固定种子 0x5EED01 的同一流）生成，
+   * 位置/长度/相位固定在数组里，G.time 只驱动 alpha 与相位偏移。
+   */
+  var A_FIELD_N = 160;     // 圆盘内噪点数
+  var A_FIELD_S = 40;      // 外环径向短划数
+
+  function buildArenaField(rnd) {
+    formNX.length = 0; formNY.length = 0; formNSz.length = 0;
+    formSX.length = 0; formSY.length = 0; formSA.length = 0;
+    formSL.length = 0;
+
+    /* 噪点：单位圆内按面积均匀（sqrt 半径），纵向再放到 0..1 的椭圆里。 */
+    var i, ang, rad;
+    for (i = 0; i < A_FIELD_N; i++) {
+      ang = rnd() * TAU;
+      rad = Math.sqrt(rnd()) * 0.97;
+      formNX.push(Math.cos(ang) * rad);
+      formNY.push(Math.sin(ang) * rad);
+      formNSz.push(0.7 + rnd() * 1.5);
+    }
+    /* 径向短划：落在外环带（0.55–0.99），朝圆心外侧，读作"外环刻度"。 */
+    for (i = 0; i < A_FIELD_S; i++) {
+      ang = rnd() * TAU;
+      rad = 0.55 + rnd() * 0.44;
+      formSA.push(ang);
+      formSL.push(9 + rnd() * 18);
+      formSX.push(Math.cos(ang) * rad);
+      formSY.push(Math.sin(ang) * rad);
     }
   }
 
@@ -8479,6 +8562,10 @@ var DF = DF || {};
     _gBg = null;
     _gVig = null;
     _gFog = null;
+    _gFieldVig = null;
+    _gArenaBg = null;
+    _arenaBgKey = '';
+    _gShadow = null;
     _gradPanel = {};
     _gradNeb = {};
     _gradBar = {};
@@ -8795,6 +8882,9 @@ var DF = DF || {};
     if (showWorld) {
       /* 2 · 地板 / 墙 / 拱门 */
       drawRoom(ctx, G, tp);
+      /* 2b · 场地落光：压在场地之上、实体之下。
+         作用是把视线从外沿推回中间，而不是像 drawOverlay 那样压在 HUD 上。 */
+      drawFieldVignette(ctx);
       /* 3 · 拾取物 */
       drawPickups(ctx, G, tp);
       /* 4 · 敌人 + Boss */
@@ -9026,6 +9116,242 @@ var DF = DF || {};
     }
   }
 
+  /* =========================================================================
+   * 10b · 道场地面（战斗画面密度主战场）
+   *
+   * 为什么要重做：原来 arena 分支只有半径 126 / 222 / 318 的三重阵纹 + 8 条
+   * 只到 320 的辐条，而可走区是 1104×544（bounds=88..1192 × 88..632）。
+   * 中心圆盘直径 636 落在 1104 宽的场地里，四角与外沿约 40% 面积是一片死黑 ——
+   * 评审第一眼看到的"空"就是这个。这里分五层把地面铺满：
+   *   ① 同心阵纹（跟随可走区比例的椭圆，慢旋）
+   *   ② 16 条放射线（由内圈射到可走区外沿）
+   *   ③ 每圈 24 个刻度点（每 15° 一个 2px 方点，"雷达刻度"感）
+   *   ④ 32 段断续弧（每段 6°、间隔 5.25°，方向与 ① 相反 → 反相层次）
+   *   ⑤ 固定种子点云 + 外环径向短划（覆盖到 bounds 四角）
+   *
+   * 性能：所有同色小元素合并进一条 path 一次 fill/stroke，
+   *      整块地面每帧约 6 + 圈数 次绘制调用（普通波 4 圈 = 10 次）；
+   *      位置全部在 init 期用固定种子算好，运行时只让 alpha 随 G.time 呼吸，
+   *      不新建对象、不新建渐变、不调用随机 → 无抖动、无每帧分配。
+   * ===================================================================== */
+
+  var A_TICKS = 24;        // 每圈刻度数（360/24 = 15°）
+
+  /* 场地椭圆半径相对可走区半宽/半高的比例（0..1）。
+     Boss 波阵纹更靠内，留白给大体积 Boss；普通波铺满。 */
+  var A_RINGS_BOSS = [0.20, 0.38, 0.56, 0.74, 0.92];
+  var A_RINGS_NORM = [0.24, 0.47, 0.70, 0.92];
+
+  function drawArenaField(ctx, G, tp, isBoss) {
+    var b = (G.room && G.room.bounds) || null;
+    /* 兜底：没有 bounds（老存档 / 单房间流程）就退回屏幕内框 */
+    var bx, by, bw, bh;
+    if (b && b.w > 0) { bx = b.x; by = b.y; bw = b.w; bh = b.h; }
+    else { bx = PAD; by = PAD; bw = W - PAD * 2; bh = H - PAD * 2; }
+
+    var cxa = bx + bw * 0.5, cya = by + bh * 0.5;
+    var rxMax = bw * 0.5, ryMax = bh * 0.5;
+    var t = _reduce ? 0 : _time;
+    var spin = t * 0.06;
+    var acc = tp.accent;
+    var i, k;
+
+    ctx.save();
+    /* 地面纹理裁到【可走区】而不是屏幕内框：
+       原来的阵纹是正圆（最大半径 318），而可走区是 1104×544 的椭圆带 ——
+       左右两侧各约 234px 宽、贯穿全高的带状区一点图案都没有，
+       占总面积约 42%，这就是"画面空"最主要的一块。
+       现在阵纹改成跟随可走区比例的椭圆，正好铺满整块场地。 */
+    rr(ctx, bx, by, bw, bh, 10);
+    ctx.clip();
+
+    var rings = isBoss ? A_RINGS_BOSS : A_RINGS_NORM;
+
+    /* ---- ① 同心阵纹（椭圆，慢旋） ---- */
+    for (i = 0; i < rings.length; i++) {
+      var rx = rxMax * rings[i], ry = ryMax * rings[i];
+      ctx.beginPath();
+      ctx.ellipse(cxa, cya, rx, ry, 0, spin * (i + 1), spin * (i + 1) + TAU);
+      /* Boss 波原来固定 0.05，空得只剩几根淡线；这里统一抬到可读范围，
+         最外圈仍比内圈暗，保留"外圈是结界外围"的层次。 */
+      ctx.strokeStyle = hexA(acc, Math.max(0.07, (isBoss ? 0.13 : 0.19) - i * 0.028).toFixed(2));
+      ctx.lineWidth = isBoss ? 1.4 : 1.8;
+      ctx.stroke();
+    }
+
+    /* ---- ② 16 条放射线：从内圈一路射到可走区外沿 ---- */
+    if (!isBoss) {
+      ctx.beginPath();
+      for (i = 0; i < 16; i++) {
+        var ang = spin + i * TAU / 16;
+        ctx.moveTo(cxa + Math.cos(ang) * rxMax * rings[0] * 0.92,
+          cya + Math.sin(ang) * ryMax * rings[0] * 0.92);
+        ctx.lineTo(cxa + Math.cos(ang) * rxMax * 0.985,
+          cya + Math.sin(ang) * ryMax * 0.985);
+      }
+      ctx.strokeStyle = hexA(acc, 0.085);
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    /* ---- ③ 刻度点：沿每圈每 15° 一个 2px 方点，外圈逐级变淡 ----
+       注意：一条 path 只能用最后一次的 fillStyle 填充，所以按圈分开 fill
+       （4–5 次 fill 调用，仍是常量级开销）。 */
+    for (i = 0; i < rings.length; i++) {
+      var trx = rxMax * rings[i], try2 = ryMax * rings[i];
+      var tAlpha = Math.max(0.07, 0.30 - i * 0.055);
+      ctx.beginPath();
+      for (k = 0; k < A_TICKS; k++) {
+        var ta = spin * (i % 2 ? -1 : 1) + k * TAU / A_TICKS;
+        ctx.rect(cxa + Math.cos(ta) * trx - 1, cya + Math.sin(ta) * try2 - 1, 2, 2);
+      }
+      ctx.fillStyle = hexA(acc, tAlpha.toFixed(2));
+      ctx.fill();
+    }
+
+    /* ---- ④ 32 段断续弧：每段 6°、间隔 5.25°，与 ① 反向慢旋 ---- */
+    var segs = 32;
+    var segArc = Math.PI / 30;                 // 6°
+    var segGap = TAU / segs;                   // 11.25° → 段间留 5.25°
+    var arcR = isBoss ? 0.80 : 0.985;
+    var arcSpin = -t * 0.032;
+    var arx = rxMax * arcR, ary = ryMax * arcR;
+    ctx.beginPath();
+    for (i = 0; i < segs; i++) {
+      var a0 = arcSpin + i * segGap;
+      /* ellipse() 会把当前点连到弧起点，所以每段前先 moveTo 到起点，
+         否则相邻段之间会被拉出弦线，看起来像同心圆而不是断续弧。 */
+      ctx.moveTo(cxa + Math.cos(a0) * arx, cya + Math.sin(a0) * ary);
+      ctx.ellipse(cxa, cya, arx, ary, 0, a0, a0 + segArc);
+    }
+    /* 呼吸：0.9Hz（与心跳同频），幅度 ±28%，不干扰可读性 */
+    var breathe = _reduce ? 0.72 : (0.72 + 0.28 * Math.sin(t * TAU * 0.9));
+    ctx.strokeStyle = hexA(acc, (0.16 * breathe).toFixed(2));
+    ctx.lineWidth = 1.4;
+    ctx.stroke();
+
+    /* ---- ⑤ 固定种子点云 + 外环径向短划（运行时只让 alpha 呼吸） ---- */
+    var nA = _reduce ? 0.75 : (0.62 + 0.38 * Math.sin(t * 0.7));
+    ctx.beginPath();
+    for (i = 0; i < formNX.length; i++) {
+      ctx.rect(cxa + formNX[i] * rxMax, cya + formNY[i] * ryMax, formNSz[i], formNSz[i]);
+    }
+    ctx.fillStyle = hexA(acc, (0.10 * nA).toFixed(2));
+    ctx.fill();
+
+    ctx.beginPath();
+    for (i = 0; i < formSX.length; i++) {
+      var da = formSA[i];
+      var dx0 = cxa + formSX[i] * rxMax, dy0 = cya + formSY[i] * ryMax;
+      ctx.moveTo(dx0, dy0);
+      ctx.lineTo(dx0 + Math.cos(da) * formSL[i], dy0 + Math.sin(da) * formSL[i] * 0.62);
+    }
+    ctx.strokeStyle = hexA(acc, (0.12 * nA).toFixed(2));
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  /**
+   * §10b 可走区边界（原来是隐形的）。
+   *
+   * 玩家能走到哪由 r.bounds（pad 88）决定，但画面上只有 pad 14 的屏幕框，
+   * 中间那 74px 带宽成了"看得见走不到"的死区 —— 这也加深了"空"。
+   * 这里把 bounds 画出来：内发光圆角矩形 + 四角 L 形阵角 + 0.9Hz 呼吸，
+   * 并且玩家贴边时对应那一条瞬时提亮（纯读位置，不改任何状态）。
+   */
+  function drawArenaBounds(ctx, G, tp) {
+    var G0 = G.room || {};
+    var b = G0.bounds;
+    if (!b || !(b.w > 0)) return;
+    var t = _reduce ? 0 : _time;
+    var breathe = _reduce ? 0.7 : (0.55 + 0.45 * Math.sin(t * TAU * 0.9));
+    var acc = tp.accent;
+
+    /* 玩家贴边程度（0..1），用于对应边的瞬时提亮 */
+    var p = G.player || {};
+    var edge = 26;
+    var nX = 0, sX = 0, wY = 0, eY = 0;
+    if (p.x !== undefined) {
+      var dxl = p.x - b.x, dxr = (b.x + b.w) - p.x;
+      var dyt = p.y - b.y, dyb = (b.y + b.h) - p.y;
+      if (dxl < edge) wY = clamp(1 - dxl / edge, 0, 1);
+      if (dxr < edge) eY = clamp(1 - dxr / edge, 0, 1);
+      if (dyt < edge) nX = clamp(1 - dyt / edge, 0, 1);
+      if (dyb < edge) sX = clamp(1 - dyb / edge, 0, 1);
+    }
+    var hit = Math.max(nX, sX, wY, eY);
+
+    ctx.save();
+    /* 内发光：bounds 内缩 6px，主色 12%（呼吸到 12%±；贴边时整体微亮） */
+    var baseA = 0.12 + 0.05 * (breathe - 0.55) / 0.45 + 0.10 * hit;
+    rr(ctx, b.x + 6, b.y + 6, b.w - 12, b.h - 12, 10);
+    ctx.strokeStyle = hexA(acc, clamp(baseA, 0.06, 0.34).toFixed(2));
+    ctx.lineWidth = 2;
+    ctx.stroke();
+
+    /* 外一圈更淡的双线，做出"结界有两层"的厚度 */
+    rr(ctx, b.x + 11, b.y + 11, b.w - 22, b.h - 22, 8);
+    ctx.strokeStyle = hexA(acc, clamp(baseA * 0.45, 0.03, 0.16).toFixed(2));
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    /* 四边贴边提亮：把靠近的那条边单独描一遍 */
+    if (hit > 0.02) {
+      ctx.beginPath();
+      if (wY > 0.02) { ctx.moveTo(b.x + 6, b.y + 6); ctx.lineTo(b.x + 6, b.y + b.h - 6); }
+      if (eY > 0.02) { ctx.moveTo(b.x + b.w - 6, b.y + 6); ctx.lineTo(b.x + b.w - 6, b.y + b.h - 6); }
+      if (nX > 0.02) { ctx.moveTo(b.x + 6, b.y + 6); ctx.lineTo(b.x + b.w - 6, b.y + 6); }
+      if (sX > 0.02) { ctx.moveTo(b.x + 6, b.y + b.h - 6); ctx.lineTo(b.x + b.w - 6, b.y + b.h - 6); }
+      ctx.strokeStyle = hexA(acc, (0.18 + 0.42 * hit).toFixed(2));
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+    }
+
+    /* 四角 L 形阵角（比原来贴屏幕角的 54px 更靠内，贴着可走区） */
+    var corner = 46;
+    var ca = clamp(0.20 + 0.16 * breathe + 0.30 * hit, 0.14, 0.72);
+    ctx.beginPath();
+    for (var i = 0; i < 4; i++) {
+      var cx0 = (i === 0 || i === 2) ? b.x + 6 : b.x + b.w - 6;
+      var cy0 = (i < 2) ? b.y + 6 : b.y + b.h - 6;
+      var sx = (i === 0 || i === 2) ? 1 : -1;
+      var sy = (i < 2) ? 1 : -1;
+      ctx.moveTo(cx0 + sx * corner, cy0);
+      ctx.lineTo(cx0, cy0);
+      ctx.lineTo(cx0, cy0 + sy * corner);
+    }
+    ctx.strokeStyle = hexA(acc, ca.toFixed(2));
+    ctx.lineWidth = 2.4;
+    ctx.stroke();
+
+    ctx.restore();
+  }
+
+  /**
+   * §10b 场地落光（vignette）。
+   *
+   * 既有 drawOverlay 的暗角是画在 HUD 之上的屏幕空间层（会把 HUD 一起压暗），
+   * 而且到 72% 就压到 .28 —— 真正让"空白变聚焦"的一层应该在
+   * 场地之后、实体之前：把外沿压暗，视线自然被推回中间的敌人和子弹。
+   * 缓存径向渐变，只在 resize 时重建，热路径零新建。
+   */
+  function drawFieldVignette(ctx) {
+    if (!_gFieldVig) {
+      /* 幅度刻意压得很小：drawOverlay 已经有一层 .72 的屏幕暗角了，
+         这里再多就会把刚铺好的地面纹理一起压回死黑，等于白做。
+         这一层的职责只是"把视线推到中间"，不是"把边角变黑"。 */
+      _gFieldVig = ctx.createRadialGradient(W * 0.5, H * 0.5, Math.min(W, H) * 0.34,
+        W * 0.5, H * 0.5, Math.sqrt(W * W + H * H) * 0.56);
+      _gFieldVig.addColorStop(0, 'rgba(0,0,0,0)');
+      _gFieldVig.addColorStop(0.60, 'rgba(0,0,0,.055)');
+      _gFieldVig.addColorStop(1, 'rgba(0,0,0,.17)');
+    }
+    ctx.fillStyle = _gFieldVig;
+    ctx.fillRect(-W, -H, W * 3, H * 3);
+  }
+
   function drawRoom(ctx, G, tp) {
     var room = G.room || {};
     var isBoss = (room.type === 'boss');
@@ -9041,11 +9367,17 @@ var DF = DF || {};
     var isArenaBase = !!(G.room && G.room.node && G.room.node.arena);
     rr(ctx, x0, y0, w, h, r);
     if (isArenaBase) {
-      var ag = ctx.createRadialGradient(W * 0.5, H * 0.5, 60, W * 0.5, H * 0.5, W * 0.62);
-      ag.addColorStop(0, 'rgba(120,160,220,.075)');
-      ag.addColorStop(0.55, 'rgba(60,90,150,.045)');
-      ag.addColorStop(1, 'rgba(6,8,24,.30)');
-      ctx.fillStyle = ag;
+      /* 缓存：原来这里每帧 new 一个径向渐变（60fps 下每秒 60 个对象）。
+         场地底色对主题主色不敏感，只跟 W/H 有关，所以按 W|H 做键缓存。 */
+      var agKey = W + '|' + H;
+      if (!_gArenaBg || _arenaBgKey !== agKey) {
+        _gArenaBg = ctx.createRadialGradient(W * 0.5, H * 0.5, 60, W * 0.5, H * 0.5, W * 0.62);
+        _gArenaBg.addColorStop(0, 'rgba(120,160,220,.075)');
+        _gArenaBg.addColorStop(0.55, 'rgba(60,90,150,.045)');
+        _gArenaBg.addColorStop(1, 'rgba(6,8,24,.30)');
+        _arenaBgKey = agKey;
+      }
+      ctx.fillStyle = _gArenaBg;
     } else {
       ctx.fillStyle = 'rgba(6,8,24,.26)';
     }
@@ -9056,31 +9388,8 @@ var DF = DF || {};
        纯肉鸽道场改成三重同心阵纹（外圈缓缓旋转，像护山大阵）。
        Boss 波保留原来的同心圆（更空，衬托大体积 Boss）。 */
     var isArena = !!(G.room && G.room.node && G.room.node.arena);
-    if (!isBoss && isArena) {
-      ctx.save();
-      rr(ctx, x0, y0, w, h, r);
-      ctx.clip();
-      var cxa = W * 0.5, cya = H * 0.5;
-      var spin = (G.time || 0) * 0.06;
-      for (var ri = 1; ri <= 3; ri++) {
-        var rad = 96 * ri + 30;
-        ctx.beginPath();
-        ctx.arc(cxa, cya, rad, spin * ri, spin * ri + Math.PI * 2);
-        ctx.strokeStyle = hexA(tp.accent, 0.16 - ri * 0.030);
-        ctx.lineWidth = 1.8;
-        ctx.stroke();
-      }
-      /* 八卦式放射线：8 条从内圈射到外圈，给地面一点方向感 */
-      ctx.beginPath();
-      for (var ai = 0; ai < 8; ai++) {
-        var ang = spin + ai * Math.PI / 4;
-        ctx.moveTo(cxa + Math.cos(ang) * 126, cya + Math.sin(ang) * 126);
-        ctx.lineTo(cxa + Math.cos(ang) * 320, cya + Math.sin(ang) * 320);
-      }
-      ctx.strokeStyle = hexA(tp.accent, 0.11);
-      ctx.lineWidth = 1;
-      ctx.stroke();
-      ctx.restore();
+    if (isArena) {
+      drawArenaField(ctx, G, tp, isBoss);
     } else if (!isBoss) {
       ctx.save();
       rr(ctx, x0, y0, w, h, r);
@@ -9141,8 +9450,10 @@ var DF = DF || {};
       drawDoor(ctx, x0 - 12, dy, dw, dh, op, tp, 'left');
       drawDoor(ctx, x0 + w - dw + 12, dy, dw, dh, op, tp, 'right');
     } else {
-      /* 道场四角改画四道阵纹（"结界"感），并且清波时整体亮一下 */
-      var pulse = (G.room.state === 'cleared') ? 0.5 + 0.5 * Math.sin((G.time || 0) * 4) : 0.16;
+      /* 屏幕四角阵纹（"结界"感），清波时整体亮一下。
+         原来是主视觉；现在可走区边界（下面 drawArenaBounds）接管了"结界"主体，
+         这一层退回成外框点缀，否则两层 L 形叠在一起会显得吵。 */
+      var pulse = (G.room.state === 'cleared') ? 0.34 + 0.30 * Math.sin((G.time || 0) * 4) : 0.11;
       var corner = 54;
       ctx.save();
       ctx.strokeStyle = hexA(tp.accent, pulse);
@@ -9158,6 +9469,9 @@ var DF = DF || {};
         ctx.stroke();
       }
       ctx.restore();
+
+      /* 可走区边界（bounds）—— 原来是完全隐形的 */
+      drawArenaBounds(ctx, G, tp);
     }
   }
 
@@ -10055,10 +10369,68 @@ var DF = DF || {};
     }
   }
 
+  /**
+   * 敌人地面锚影 —— 纯表现层，不参与任何判定。
+   *
+   * 1440×900 下敌人本体直径只有 40–54px，实测远看像"浮在场地里的两个点"，
+   * 缺少落地感。这里在每只敌人脚下压一个椭圆软影（形状信息，不靠颜色），
+   * 让敌人与地面之间建立接触关系，也让"有几个敌人"更容易一眼数清。
+   *
+   * 用单色 rgba 直接 fill（不建渐变、不开 shadowBlur），
+   * 每只敌人 1 次 fillArc，热路径开销可忽略。
+   */
+  /* 锚影用的软边径向渐变：固定建一次（以原点为中心，半径 32），
+     绘制时靠 translate/scale 拉伸成任意大小的椭圆 —— 每帧零新建。
+     不能直接用实心 rgba 填充：实测实心椭圆会读成一个"洞"，
+     必须由中心向外衰减才像投影。 */
+  var _gShadow = null;
+  function shadowGrad(ctx) {
+    if (_gShadow) return _gShadow;
+    _gShadow = ctx.createRadialGradient(0, 0, 0, 0, 0, 32);
+    _gShadow.addColorStop(0, 'rgba(0,0,0,.40)');
+    _gShadow.addColorStop(0.45, 'rgba(0,0,0,.22)');
+    _gShadow.addColorStop(0.78, 'rgba(0,0,0,.07)');
+    _gShadow.addColorStop(1, 'rgba(0,0,0,0)');
+    return _gShadow;
+  }
+
+  function drawEnemyShadows(ctx, G) {
+    var arr = G.enemies;
+    if (!arr || !arr.length) return;
+    var t = _reduce ? 0 : _time;
+    var g = shadowGrad(ctx);
+    var BASE = 32;
+    for (var i = 0; i < arr.length; i++) {
+      var e = arr[i];
+      if (!e || e.alive === false || e.state === 'dying') continue;
+      var r = e.radius || 18;
+      /* 出生段阴影跟着放大，避免"影子先出现、身体后长出来"的错位 */
+      var sk = 1;
+      if (e.state === 'spawn') {
+        var sf = clamp((e.spawnT || 0) / Math.max(1e-4, anim('ENEMY_SPAWN_FADE', 0.20)), 0, 1);
+        sk = 0.25 + 0.75 * sf;
+      }
+      /* 呼吸幅度极小（±3%），只是让静止的敌人不显得像贴图 */
+      var br = _reduce ? 1 : (1 + 0.03 * Math.sin(t * 2.1 + (e.x || 0) * 0.01));
+      var rx = r * 1.30 * sk * br;
+      var ry = r * 0.52 * sk * br;
+      ctx.save();
+      ctx.translate(e.x, e.y + r * 0.92);
+      ctx.scale(rx / BASE, ry / BASE);
+      ctx.fillStyle = g;
+      ctx.beginPath();
+      ctx.arc(0, 0, BASE, 0, TAU);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
   function drawEnemies(ctx, G, tp) {
     var arr = G.enemies;
     if (!arr || !arr.length) return;
     ctx.shadowBlur = 0;
+    /* 先铺一遍锚影（所有影子压在所有敌人之下，避免互相盖住） */
+    drawEnemyShadows(ctx, G);
     for (var i = 0; i < arr.length; i++) {
       var e = arr[i];
       if (!e || e.alive === false) continue;
@@ -12377,6 +12749,18 @@ var DF = DF || {};
     if (DF.AUDIO) { if (win) DF.AUDIO.win(); else DF.AUDIO.lose(); }
   }
 
+  /**
+   * v5：玩家可见的「打到第几波」，1 起。
+   * 与 wavesCleared（已清波数）是两件事：死在第一波 = 已清 0 波，但玩家看到的是「第 1 波」。
+   * 取值顺序：waveReached → wave → wavesCleared+1（兼容旧存档 / 测试直接造的局）。
+   */
+  function waveReachedOf(G) {
+    G = G || DF.G;
+    var r = (G && G.run) || {};
+    var n = (r.waveReached || 0) || (r.wave || 0) || ((r.wavesCleared || 0) + 1);
+    return Math.max(1, Math.floor(Number(n) || 0));
+  }
+
   function renderResult() {
     if (!el.result) return;
     var G = DF.G;
@@ -12388,7 +12772,9 @@ var DF = DF || {};
       var acc = G.stats.shots > 0 ? Math.round((G.stats.hits / G.stats.shots) * 100) : 0;
       var relics = realRelics(p).map(function (r) { return r.name; }).join('、');
       var rows = [
-        { label: '波次', value: U.fmtNum(G.run.wavesCleared || 0), cls: 'cyan' },
+        /* v5：玩家可见的波次 = 「打到第几波」（waveReached，1 起），
+           不是「已清波数」——死在第一波时后者是 0，会显示成「波次 0」。 */
+        { label: '波次', value: '第 ' + U.fmtNum(waveReachedOf(G)) + ' 波', cls: 'cyan' },
         { label: '灵气', value: U.fmtNum(G.run.stardust || 0), cls: 'gold' },
         { label: '击杀', value: U.fmtNum(G.stats.kills || 0), cls: 'violet' },
         { label: '命中率', value: acc + '%', cls: 'mint' },
@@ -12420,6 +12806,11 @@ var DF = DF || {};
                   ' 灵气 · 最高 第 ' + esc(U.fmtNum(best.bestFloors)) + ' 波 · 共 ' + esc(U.fmtNum(best.runs)) + ' 局</p>';
         }
       } catch (e2) { }
+      /* v5：首战即陨的鼓励语。只加一句淡色小字，不抢战绩与道心录。
+         判据 = 没通关 + 第一波就倒下（waveReached<=1），且不是主动退出。 */
+      if (!win && G.run.endReason === 'dead' && waveReachedOf(G) <= 1) {
+        html += '<p class="df-stat-label" style="margin-top:8px">首战即陨 —— 道场不认输赢，只认再来一次。</p>';
+      }
       el.resultBody.innerHTML = html;
     }
 
@@ -12455,7 +12846,7 @@ var DF = DF || {};
     }
     var lines = [
       '🌙《仙途·飞升录》仙途战绩 · 种子 ' + (G.run.seed || 0),
-      '道韵：' + themeName + ' ｜ 波次：第 ' + (G.run.wavesCleared || 0) + ' 波 ｜ 法器：' + wname,
+      '道韵：' + themeName + ' ｜ 波次：第 ' + waveReachedOf(G) + ' 波 ｜ 法器：' + wname,
       '奇物：' + relicList + ' ｜ 灵气：+' + (G.run.stardust || 0)
     ];
     if (oneLine) lines.push('"' + oneLine + '"');
@@ -13111,7 +13502,7 @@ var DF = DF || {};
     var acc = G.stats.shots > 0 ? Math.round((G.stats.hits / G.stats.shots) * 100) : 0;
     var cells = [
       ['灵气', U.fmtNum(G.run.stardust || 0)],
-      ['波次', '第 ' + U.fmtNum(G.run.wavesCleared || 0) + ' 波'],
+      ['波次', '第 ' + U.fmtNum(waveReachedOf(G)) + ' 波'],
       ['击杀', U.fmtNum(G.stats.kills || 0)],
       ['命中率', acc + '%'],
       ['用时', U.fmtTime(G.run.playTime || 0)],
